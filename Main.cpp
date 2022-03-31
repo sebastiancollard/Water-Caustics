@@ -4,7 +4,8 @@
 //------------------------------
 
 #include<iostream>
-#include<glad/glad.h>
+#include "objFile.h"
+
 #include<GLFW/glfw3.h>
 #include<stb/stb_image.h>
 #include<glm/glm.hpp>
@@ -19,9 +20,46 @@
 #include"Camera.h"
 #include <vector>
 
+using namespace std;
+using namespace glm;
+
 void renderQuad();
 
+// Vertex array object
+GLuint myVAO;
 
+// Shader program to use
+GLuint myShaderProgram;
+
+// Shader filenames
+string vsFilename = "default.vert";
+string fsFilename = "default.frag";
+
+// ObjFile instance
+ObjFile* file;
+
+// Transformation matrices
+mat4 rot = mat4(1.0f);
+mat4 scaling = mat4(1.0f);
+mat4 translation = mat4(1.0f);
+float scalar = 1.0f;
+
+//shader constants
+const float amplitude = 0.06125;
+const float frequency = 4;
+//const float amplitude = 0.2;
+//const float frequency = 2;
+const float PI = 3.14159;
+
+float PHI = 1.61803398874989484820459;  // = Golden Ratio   
+
+float gold_noise(vec2 xy, float seed) {
+	return fract(tan(distance(xy * PHI, xy) * seed) * xy.x);
+}
+
+// Constants to help with location bindings
+#define VERTEX_DATA 0
+#define VERTEX_NORMAL 1
 
 const unsigned int width = 1920;
 const unsigned int height = 1080;
@@ -66,8 +104,170 @@ GLuint indices[TOTAL_INDICES];
 //};
 
 
-int main()
+////////////////////////////////////////////////////////////////
+// Load the shader from the specified file. Returns false if the
+// shader could not be loaded
+static GLubyte shaderText[8192];
+bool loadShaderFile(const char* filename, GLuint shader) {
+	GLint shaderLength = 0;
+	FILE* fp;
+
+	// Open the shader file
+	fp = fopen(filename, "r");
+	if (fp != NULL) {
+		// See how long the file is
+		while (fgetc(fp) != EOF)
+			shaderLength++;
+
+		// Go back to beginning of file
+		rewind(fp);
+
+		// Read the whole file in
+		fread(shaderText, 1, shaderLength, fp);
+
+		// Make sure it is null terminated and close the file
+		shaderText[shaderLength] = '\0';
+		fclose(fp);
+	}
+	else {
+		return false;
+	}
+
+	// Load the string into the shader object
+	GLchar* fsStringPtr[1];
+	fsStringPtr[0] = (GLchar*)((const char*)shaderText);
+	glShaderSource(shader, 1, (const GLchar**)fsStringPtr, NULL);
+
+	return true;
+}
+
+
+// Called to draw scene
+void renderScene() {
+	// Clear the window and the depth buffer
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glUseProgram(myShaderProgram);
+
+	//Scale based on input
+	scaling = scale(mat4(1.0f), vec3(scalar)) * scaling;
+
+	//Create and pass model view matrix
+	mat4 modelView = lookAt(vec3(0.0f, 0.0f, -10.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+	modelView = rot * scaling * translation;
+	mat4 model = rot * scaling * translation;
+	glUniformMatrix4fv(glGetUniformLocation(myShaderProgram, "model"), 1, GL_FALSE, value_ptr(model));
+
+	//Create and pass projection matrix
+	mat4 proj = perspective(45.0f, (float)width / (float)height, 0.1f, 100.0f);
+	glUniformMatrix4fv(glGetUniformLocation(myShaderProgram, "proj_matrix"), 1, GL_FALSE, value_ptr(proj));
+
+	//Set shader uniforms
+	glUniform3f(glGetUniformLocation(myShaderProgram, "light_pos"), 1.0f, 1.0f, -1.0f);
+
+
+	// Note that this version of the draw command uses the
+	// bound index buffer to get the vertex coordinates.
+	file->draw(VERTEX_DATA, VERTEX_NORMAL);
+}
+
+
+// This function does any needed initialization on the rendering
+// context. 
+void setupRenderingContext() {
+	// Background
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glEnable(GL_DEPTH_TEST);
+
+	// First setup the shaders
+	//Now, let's setup the shaders
+	GLuint hVertexShader = glCreateShader(GL_VERTEX_SHADER);
+	GLuint hFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	myShaderProgram = (GLuint)NULL;
+	GLint testVal;
+
+	if (!loadShaderFile(vsFilename.c_str(), hVertexShader)) {
+		glDeleteShader(hVertexShader);
+		glDeleteShader(hFragmentShader);
+		cout << "The shader " << vsFilename << " could not be found." << endl;
+	}
+
+	if (!loadShaderFile(fsFilename.c_str(), hFragmentShader)) {
+		glDeleteShader(hVertexShader);
+		glDeleteShader(hFragmentShader);
+		cout << "The shader " << fsFilename << " could not be found." << endl;
+	}
+
+	glCompileShader(hVertexShader);
+	glCompileShader(hFragmentShader);
+
+	// Check for any error generated during shader compilation
+	glGetShaderiv(hVertexShader, GL_COMPILE_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char source[8192];
+		char infoLog[8192];
+		glGetShaderSource(hVertexShader, 8192, NULL, source);
+		glGetShaderInfoLog(hVertexShader, 8192, NULL, infoLog);
+		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
+		fprintf(stderr, "%s\n", infoLog);
+		glDeleteShader(hVertexShader);
+		glDeleteShader(hFragmentShader);
+	}
+	glGetShaderiv(hFragmentShader, GL_COMPILE_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char source[8192];
+		char infoLog[8192];
+		glGetShaderSource(hFragmentShader, 8192, NULL, source);
+		glGetShaderInfoLog(hFragmentShader, 8192, NULL, infoLog);
+		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
+		fprintf(stderr, "%s\n", infoLog);
+		glDeleteShader(hVertexShader);
+		glDeleteShader(hFragmentShader);
+	}
+
+	// Create the shader program and bind locations for the vertex
+	// attributes before linking. The linking process can also generate errors
+
+	myShaderProgram = glCreateProgram();
+	glAttachShader(myShaderProgram, hVertexShader);
+	glAttachShader(myShaderProgram, hFragmentShader);
+
+	glBindAttribLocation(myShaderProgram, VERTEX_DATA, "position");
+	//glBindAttribLocation( myShaderProgram, VERTEX_COLOUR, "vColor" );
+	glBindAttribLocation(myShaderProgram, VERTEX_NORMAL, "normal");
+
+	glLinkProgram(myShaderProgram);
+	glDeleteShader(hVertexShader);
+	glDeleteShader(hFragmentShader);
+	glGetProgramiv(myShaderProgram, GL_LINK_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char infoLog[1024];
+		glGetProgramInfoLog(myShaderProgram, 1024, NULL, infoLog);
+		cout << "The shader program (" << vsFilename << " + " << fsFilename << ") failed to link:" << endl << (const char*)infoLog << endl;
+		glDeleteProgram(myShaderProgram);
+		myShaderProgram = (GLuint)NULL;
+	}
+
+	// Now setup the geometry in a vertex buffer object
+
+	// setup the vertex state array object. All subsequent buffers will
+	// be bound to it.
+	glGenVertexArrays(1, &myVAO);
+	glBindVertexArray(myVAO);
+}
+
+
+int main(int argc, char** argv)
 {
+	if (argc != 2) {
+		cout << "Usage: " << argv[0] << " filename\n";
+		exit(EXIT_FAILURE);
+	}
+
+	file = new ObjFile(argv[1]);
+	if (file->numVertices() == 0) {
+		cout << "Could not load file " << argv[1] << ".\n";
+		exit(EXIT_FAILURE);
+	}
 	// Initialize GLFW
 	glfwInit();
 
@@ -90,7 +290,6 @@ int main()
 	}
 	// Introduce the window into the current context
 	glfwMakeContextCurrent(window);
-
 	//Load GLAD so it configures OpenGL
 	gladLoadGL();
 	// Specify the viewport of OpenGL in the Window
@@ -107,73 +306,9 @@ int main()
 
 
 
-	//setup plane geometry
-	//setup plane vertices
-	int count = 0;
-	int i = 0, j = 0;
-	for (j = 0; j <= NUM_Z; j++) {
-		for (i = 0; i <= NUM_X; i++) {
-			vertexes[count++] = glm::vec3(((float(i) / (NUM_X - 1)) * 2 - 1) * HALF_SIZE_X, 0, ((float(j) / (NUM_Z - 1)) * 2 - 1) * HALF_SIZE_Z);
-		}
-	}
-
-	//fill plane indices array
 	
-	GLuint* id = &indices[0];
-	for (i = 0; i < NUM_Z; i++) {
-		for (j = 0; j < NUM_X; j++) {
-			int i0 = i * (NUM_X + 1) + j;
-			int i1 = i0 + 1;
-			int i2 = i0 + (NUM_X + 1);
-			int i3 = i2 + 1;
-			//std::cout << "Val: " << i0 + " " << i1 << " " << i2 << " " << i3 << "\n";
-			if ((j + i) % 2) {
-				*id++ = i0; *id++ = i2; *id++ = i1;
-				*id++ = i1; *id++ = i2; *id++ = i3;
-			}
-			else {
-				*id++ = i0; *id++ = i2; *id++ = i3;
-				*id++ = i0; *id++ = i3; *id++ = i1;
-			}
-		}
-	}
-	
-	std::vector<GLfloat> verts;
-	for (j = 0; j <= NUM_Z; j++) {
-		for (i = 0; i <= NUM_X; i++) {
-			//std::cout << "x: " << ((float(i) / (NUM_X - 1)) * 2 - 1) * HALF_SIZE_X << "\n";
-			//std::cout << "z: " << ((float(j) / (NUM_Z - 1)) * 2 - 1) * HALF_SIZE_Z << "\n";
-			verts.push_back(((float(i) / (NUM_X - 1)) * 2 - 1) * HALF_SIZE_X);
-			verts.push_back(0);
-			verts.push_back(((float(j) / (NUM_Z - 1)) * 2 - 1) * HALF_SIZE_Z);
-			verts.push_back(0.83f);
-			verts.push_back(0.70f);
-			verts.push_back(0.44f);
-			verts.push_back(0.f);
-			verts.push_back(0.f);
-		}
-	}
-	const int SIZE = verts.size();
-	GLfloat vertices[(NUM_X + 1) * (NUM_Z + 1) * 8];
-	for (int i = 0; i < verts.size(); i++) vertices[i] = verts[i];
 
-	// Generates Vertex Array Object and binds it
-	VAO VAO1;
-	VAO1.Bind();
 
-	// Generates Vertex Buffer Object and links it to vertices
-	VBO VBO1(vertices, sizeof(vertices));
-	// Generates Element Buffer Object and links it to indices
-	EBO EBO1(indices, sizeof(indices));
-
-	// Links VBO attributes such as coordinates and colors to VAO
-	VAO1.LinkAttrib(VBO1, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
-	VAO1.LinkAttrib(VBO1, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	VAO1.LinkAttrib(VBO1, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	// Unbind all to prevent accidentally modifying them
-	VAO1.Unbind();
-	VBO1.Unbind();
-	EBO1.Unbind();
 
 	float vertGround[] = {
 		// positions          // colors           // texture coords
@@ -186,76 +321,97 @@ int main()
 	   0, 1, 3, // first triangle
 	   1, 2, 3  // second triangle
 	};
+	VAO VAO1;
+	VAO1.Bind();
 
+	// Generates Vertex Buffer Object and links it to vertices
+	VBO VBO1(vertGround, sizeof(vertGround));
+	// Generates Element Buffer Object and links it to indices
+	EBO EBO1(indexGround, sizeof(indexGround));
+
+	// Links VBO attributes such as coordinates and colors to VAO
+	VAO1.LinkAttrib(VBO1, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+	VAO1.LinkAttrib(VBO1, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	VAO1.LinkAttrib(VBO1, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	// Unbind all to prevent accidentally modifying them
+	VAO1.Unbind();
+	VBO1.Unbind();
+	EBO1.Unbind();
 	unsigned int VBO, VAO, EBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 	glBindVertexArray(VAO);
-
+	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertGround), vertGround, GL_STATIC_DRAW);
-
+	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexGround), indexGround, GL_STATIC_DRAW);
-
+	
 	// position attribute
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	// color attribute
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-
+	
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
-
-	// Original code from the tutorial
-	Texture brickTex("textures/brick.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
+	
+	//// Original code from the tutorial
+	Texture brickTex("textures/vlziefgfw_2K_Albedo.jpg", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
 	brickTex.texUnit(groundShader, "tex0", 0);
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-	// Enables the Depth Buffer
+	//
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	//
+	//// Enables the Depth Buffer
 	glEnable(GL_DEPTH_TEST);
-
-	// Creates camera object
+	//
+	//// Creates camera object
 	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
-
-	// Shadow Mapping Stuff
-	unsigned int depthMapFBO;
-	glGenFramebuffers(1, &depthMapFBO);
-
-	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-
-	// Depth map for shadowMappings
-	unsigned int depthMap;
-	glGenTextures(1, &depthMap);
-	glBindTexture(GL_TEXTURE_2D, depthMap);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-		SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
+	//
+	//// Shadow Mapping Stuff
+	//unsigned int depthMapFBO;
+	//glGenFramebuffers(1, &depthMapFBO);
+	//
+	//const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+	//
+	//// Depth map for shadowMappings
+	//unsigned int depthMap;
+	//glGenTextures(1, &depthMap);
+	//glBindTexture(GL_TEXTURE_2D, depthMap);
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+	//	SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	//
+	//glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	//glDrawBuffer(GL_NONE);
+	//glReadBuffer(GL_NONE);
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
 
 
-	const float amplitude = 0.125;
-	const float frequency = 4;
-	const float PI = 3.14159;
 
-	debugDepthShader.Activate();
-	glUniform1i(glGetUniformLocation(debugDepthShader.ID, "DepthMap"), 0);
+
+
+
+	//debugDepthShader.Activate();
+	//glUniform1i(glGetUniformLocation(debugDepthShader.ID, "DepthMap"), 0);
+
+	setupRenderingContext();
+	file->calculateNormals();
+	glGenBuffers(1, &file->vertexBuffer);
+	glGenBuffers(1, &file->indexBuffer);
+	file->bufferData();
+	scaling = file->getFitScale();
+	translation = file->getFitTranslate();
 
 	// Main while loop
 	while (!glfwWindowShouldClose(window))
@@ -269,7 +425,7 @@ int main()
 		//	i += 8;
 		//}
 
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 		// Specify the color of the background
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
@@ -317,34 +473,56 @@ int main()
 
 		
 		// Tell OpenGL which Shader Program we want to use
-		shaderProgram.Activate();
+		//shaderProgram.Activate();
 		//std::cout << glfwGetTime() << "\n";
-		glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
-		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), 1.0f);
-
+		glUseProgram(myShaderProgram);
+		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
+		float time = glfwGetTime();
+		for (int i = 0; i < file->vertices.size(); i += 4) {
+			float x = file->vertices[i];
+			float y = file->vertices[i + 1];
+			float z = file->vertices[i + 2];
+			float dist = glm::length(glm::vec3(x, 0, z));
+			file->vertices[i + 1] = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * sin(-PI * x * frequency * 50 + time * 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4) * gold_noise(vec2(10.f), 12);
+			file->vertices[i + 1] += amplitude * sin(-PI * x * z * frequency / 8 + time * 2);
+			file->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
+			file->vertices[i + 1] += amplitude / 10 * sin(-PI * dist * frequency * 5 + time * 2) * gold_noise(vec2(10.f), 100);
+		}
+		file->calculateNormals();
+		file->bufferData();
 		// Handles camera inputs
 		camera.Inputs(window);
 		// Updates and exports the camera matrix to the Vertex Shader
-		camera.Matrix(45.0f, 0.1f, 100.0f, shaderProgram, "camMatrix");
+		camera.Matrix(45.0f, 0.1f, 100.0f, myShaderProgram, "camMatrix");
+		glBindVertexArray(myVAO);
+		renderScene();
+		glBindVertexArray(0);
 
-		// Binds texture so that is appears in rendering
-		brickTex.Bind();
-		// Bind the VAO so OpenGL knows to use it
+
+
+
+
+
+
+
+		//// Binds texture so that is appears in rendering
+		//brickTex.Bind();
+		//// Bind the VAO so OpenGL knows to use it
 		VAO1.Bind();
-		// Draw primitives, number of indices, datatype of indices, index of indices
-		glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(int), GL_UNSIGNED_INT, 0);
-		// Swap the back buffer with the front buffer
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		//// Draw primitives, number of indices, datatype of indices, index of indices
+		//glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(int), GL_UNSIGNED_INT, 0);
+		//// Swap the back buffer with the front buffer
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		groundShader.Activate();
 		brickTex.Bind();
 		glBindVertexArray(VAO);
-		camera.Matrix(45.0f, 0.1f, 100.0f, groundShader, "camMatrix");
-		//glDrawArrays(GL_TRIANGLES, 0, 3);
+		camera.Matrix(45.0f, 0.1f, 100.0f, groundShader.ID, "camMatrix");
+		////glDrawArrays(GL_TRIANGLES, 0, 3);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-		//simpleDepthShader.use();
-		//simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-		
+		//
+		////simpleDepthShader.use();
+		////simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		VAO1.Unbind();
 
 
 
@@ -359,11 +537,8 @@ int main()
 
 
 	// Delete all the objects we've created
-	VAO1.Delete();
-	VBO1.Delete();
-	EBO1.Delete();
-	brickTex.Delete();
-	shaderProgram.Delete();
+	//brickTex.Delete();
+	//shaderProgram.Delete();
 	// Delete window before ending the program
 	glfwDestroyWindow(window);
 	// Terminate GLFW before ending the program
@@ -399,6 +574,9 @@ void renderQuad()
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindVertexArray(0);
 }
+
+
+
 // REFERENCES:
 /*
 https://learnopengl.com/Getting-started/Textures 
