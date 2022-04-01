@@ -612,7 +612,7 @@ int main(int argc, char** argv)
 		glBindVertexArray(0);
 
 
-		
+		/*
 		// Tell OpenGL which Shader Program we want to use
 		//shaderProgram.Activate();
 		//std::cout << glfwGetTime() << "\n";
@@ -638,6 +638,7 @@ int main(int argc, char** argv)
 		glBindVertexArray(myVAO);
 		renderScene();
 		glBindVertexArray(0);
+		*/
 		
 		
 		
