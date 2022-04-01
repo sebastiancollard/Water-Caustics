@@ -145,7 +145,7 @@ bool loadShaderFile(const char* filename, GLuint shader) {
 // Called to draw scene
 void renderScene() {
 	// Clear the window and the depth buffer
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(myShaderProgram);
 
 	//Scale based on input
@@ -472,38 +472,14 @@ int main(int argc, char** argv)
 
 
 		
-		// Tell OpenGL which Shader Program we want to use
-		//shaderProgram.Activate();
-		//std::cout << glfwGetTime() << "\n";
-		glUseProgram(myShaderProgram);
-		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
-		float time = glfwGetTime();
-		for (int i = 0; i < file->vertices.size(); i += 4) {
-			float x = file->vertices[i];
-			float y = file->vertices[i + 1];
-			float z = file->vertices[i + 2];
-			float dist = glm::length(glm::vec3(x, 0, z));
-			file->vertices[i + 1] = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * sin(-PI * x * frequency * 50 + time * 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4) * gold_noise(vec2(10.f), 12);
-			file->vertices[i + 1] += amplitude * sin(-PI * x * z * frequency / 8 + time * 2);
-			file->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
-			file->vertices[i + 1] += amplitude / 10 * sin(-PI * dist * frequency * 5 + time * 2) * gold_noise(vec2(10.f), 100);
-		}
-		file->calculateNormals();
-		file->bufferData();
-		// Handles camera inputs
-		camera.Inputs(window);
-		// Updates and exports the camera matrix to the Vertex Shader
-		camera.Matrix(45.0f, 0.1f, 100.0f, myShaderProgram, "camMatrix");
-		glBindVertexArray(myVAO);
-		renderScene();
-		glBindVertexArray(0);
+		
 
 
 
 
 
 
-
+		// DRAW GROUND FIRST
 
 		//// Binds texture so that is appears in rendering
 		//brickTex.Bind();
@@ -526,7 +502,35 @@ int main(int argc, char** argv)
 
 
 
+		// DRAW WAVE AFTER, FOR BLENDING/TRANSPARENCY
 
+		// Tell OpenGL which Shader Program we want to use
+		//shaderProgram.Activate();
+		//std::cout << glfwGetTime() << "\n";
+		glUseProgram(myShaderProgram);
+		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
+		float time = glfwGetTime();
+		for (int i = 0; i < file->vertices.size(); i += 4) {
+			float x = file->vertices[i];
+			float y = file->vertices[i + 1];
+			float z = file->vertices[i + 2];
+			float dist = glm::length(glm::vec3(x, 0, z));
+			file->vertices[i + 1] = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * sin(-PI * x * frequency * 50 + time * 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4) * gold_noise(vec2(10.f), 12);
+			file->vertices[i + 1] += amplitude * sin(-PI * x * z * frequency / 8 + time * 2);
+			file->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
+			file->vertices[i + 1] += amplitude / 10 * sin(-PI * dist * frequency * 5 + time * 2) * gold_noise(vec2(10.f), 100);
+		}
+		file->calculateNormals();
+		file->bufferData();
+		// Handles camera inputs
+		camera.Inputs(window);
+		// Updates and exports the camera matrix to the Vertex Shader
+		camera.Matrix(45.0f, 0.1f, 100.0f, myShaderProgram, "camMatrix");
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBindVertexArray(myVAO);
+		renderScene();
+		glBindVertexArray(0);
 
 
 		glfwSwapBuffers(window);
