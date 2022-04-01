@@ -27,16 +27,22 @@ void renderQuad();
 
 // Vertex array object
 GLuint myVAO;
+GLuint myFineMeshVAO;
 
 // Shader program to use
 GLuint myShaderProgram;
+GLuint fineMeshShader;
 
 // Shader filenames
 string vsFilename = "default.vert";
 string fsFilename = "default.frag";
 
+string vsFineFilename = "fineMesh.vert";
+string fsFineFilename = "fineMesh.frag";
+
 // ObjFile instance
 ObjFile* file;
+ObjFile* fineFile;
 
 // Transformation matrices
 mat4 rot = mat4(1.0f);
@@ -145,7 +151,7 @@ bool loadShaderFile(const char* filename, GLuint shader) {
 // Called to draw scene
 void renderScene() {
 	// Clear the window and the depth buffer
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(myShaderProgram);
 
 	//Scale based on input
@@ -168,6 +174,89 @@ void renderScene() {
 	// Note that this version of the draw command uses the
 	// bound index buffer to get the vertex coordinates.
 	file->draw(VERTEX_DATA, VERTEX_NORMAL);
+}
+
+
+void setupRenderingContextFineMesh() {
+	// Background
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glEnable(GL_DEPTH_TEST);
+
+	// First setup the shaders
+	//Now, let's setup the shaders
+	GLuint hVertexShader = glCreateShader(GL_VERTEX_SHADER);
+	GLuint hFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	fineMeshShader = (GLuint)NULL;
+	GLint testVal;
+
+	if (!loadShaderFile(vsFineFilename.c_str(), hVertexShader)) {
+		glDeleteShader(hVertexShader);
+		glDeleteShader(hFragmentShader);
+		cout << "The shader " << vsFineFilename << " could not be found." << endl;
+	}
+
+	if (!loadShaderFile(fsFineFilename.c_str(), hFragmentShader)) {
+		glDeleteShader(hVertexShader);
+		glDeleteShader(hFragmentShader);
+		cout << "The shader " << fsFineFilename << " could not be found." << endl;
+	}
+
+	glCompileShader(hVertexShader);
+	glCompileShader(hFragmentShader);
+
+	// Check for any error generated during shader compilation
+	glGetShaderiv(hVertexShader, GL_COMPILE_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char source[8192];
+		char infoLog[8192];
+		glGetShaderSource(hVertexShader, 8192, NULL, source);
+		glGetShaderInfoLog(hVertexShader, 8192, NULL, infoLog);
+		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
+		fprintf(stderr, "%s\n", infoLog);
+		glDeleteShader(hVertexShader);
+		glDeleteShader(hFragmentShader);
+	}
+	glGetShaderiv(hFragmentShader, GL_COMPILE_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char source[8192];
+		char infoLog[8192];
+		glGetShaderSource(hFragmentShader, 8192, NULL, source);
+		glGetShaderInfoLog(hFragmentShader, 8192, NULL, infoLog);
+		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
+		fprintf(stderr, "%s\n", infoLog);
+		glDeleteShader(hVertexShader);
+		glDeleteShader(hFragmentShader);
+	}
+
+	// Create the shader program and bind locations for the vertex
+	// attributes before linking. The linking process can also generate errors
+
+	fineMeshShader= glCreateProgram();
+	glAttachShader(fineMeshShader, hVertexShader);
+	glAttachShader(fineMeshShader, hFragmentShader);
+
+	glBindAttribLocation(fineMeshShader, VERTEX_DATA, "position");
+	//glBindAttribLocation( myShaderProgram, VERTEX_COLOUR, "vColor" );
+	glBindAttribLocation(fineMeshShader, VERTEX_NORMAL, "normal");
+
+	glLinkProgram(fineMeshShader);
+	glDeleteShader(hVertexShader);
+	glDeleteShader(hFragmentShader);
+	glGetProgramiv(fineMeshShader, GL_LINK_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char infoLog[1024];
+		glGetProgramInfoLog(fineMeshShader, 1024, NULL, infoLog);
+		cout << "The shader program (" << vsFineFilename << " + " << fsFineFilename << ") failed to link:" << endl << (const char*)infoLog << endl;
+		glDeleteProgram(fineMeshShader);
+		fineMeshShader = (GLuint)NULL;
+	}
+
+	// Now setup the geometry in a vertex buffer object
+
+	// setup the vertex state array object. All subsequent buffers will
+	// be bound to it.
+	glGenVertexArrays(1, &myFineMeshVAO);
+	glBindVertexArray(myFineMeshVAO);
 }
 
 
@@ -268,6 +357,8 @@ int main(int argc, char** argv)
 		cout << "Could not load file " << argv[1] << ".\n";
 		exit(EXIT_FAILURE);
 	}
+
+	fineFile = new ObjFile(argv[1]);
 	// Initialize GLFW
 	glfwInit();
 
@@ -289,6 +380,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 	// Introduce the window into the current context
+	//std::cout << "HERE";
 	glfwMakeContextCurrent(window);
 	//Load GLAD so it configures OpenGL
 	gladLoadGL();
@@ -412,6 +504,21 @@ int main(int argc, char** argv)
 	file->bufferData();
 	scaling = file->getFitScale();
 	translation = file->getFitTranslate();
+	
+	setupRenderingContextFineMesh();
+	fineFile->calculateNormals();
+	glGenBuffers(1, &fineFile->vertexBuffer);
+	glGenBuffers(1, &fineFile->indexBuffer);
+	fineFile->bufferData();
+	scaling = fineFile->getFitScale();
+	translation = fineFile->getFitTranslate();
+
+	for (int i = 0; i < fineFile->vertices.size(); i += 4) {
+		fineFile->vertices[i + 1] = -1.4f;
+	}
+	fineFile->calculateNormals();
+	fineFile->bufferData();
+
 
 	// Main while loop
 	while (!glfwWindowShouldClose(window))
@@ -471,6 +578,40 @@ int main(int argc, char** argv)
 		*/
 
 
+
+		glBindVertexArray(myFineMeshVAO);
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUseProgram(fineMeshShader);
+
+		camera.Inputs(window);
+		// Updates and exports the camera matrix to the Vertex Shader
+		camera.Matrix(45.0f, 0.1f, 100.0f, fineMeshShader, "camMatrix");
+
+		//Scale based on input
+		scaling = scale(mat4(1.0f), vec3(scalar)) * scaling;
+
+		//Create and pass model view matrix
+		mat4 modelView = lookAt(vec3(0.0f, 0.0f, -10.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+		modelView = rot * scaling * translation;
+		mat4 model = rot * scaling * translation;
+		glUniformMatrix4fv(glGetUniformLocation(fineMeshShader, "model"), 1, GL_FALSE, value_ptr(model));
+
+		//Create and pass projection matrix
+		mat4 proj = perspective(45.0f, (float)width / (float)height, 0.1f, 100.0f);
+		glUniformMatrix4fv(glGetUniformLocation(fineMeshShader, "proj_matrix"), 1, GL_FALSE, value_ptr(proj));
+
+		//Set shader uniforms
+		glUniform3f(glGetUniformLocation(fineMeshShader, "light_pos"), 1.0f, 1.0f, -1.0f);
+
+
+		// Note that this version of the draw command uses the
+		// bound index buffer to get the vertex coordinates.
+		fineFile->draw(VERTEX_DATA, VERTEX_NORMAL);
+
+		glBindVertexArray(0);
+
+
 		
 		// Tell OpenGL which Shader Program we want to use
 		//shaderProgram.Activate();
@@ -497,6 +638,7 @@ int main(int argc, char** argv)
 		glBindVertexArray(myVAO);
 		renderScene();
 		glBindVertexArray(0);
+		
 
 
 
@@ -515,7 +657,7 @@ int main(int argc, char** argv)
 		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		groundShader.Activate();
 		brickTex.Bind();
-		glBindVertexArray(VAO);
+		//glBindVertexArray(VAO);
 		camera.Matrix(45.0f, 0.1f, 100.0f, groundShader.ID, "camMatrix");
 		////glDrawArrays(GL_TRIANGLES, 0, 3);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -524,8 +666,8 @@ int main(int argc, char** argv)
 		////simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		VAO1.Unbind();
 
-
-
+		
+		
 
 
 
