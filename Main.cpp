@@ -455,7 +455,35 @@ int main(int argc, char** argv)
 	//// Original code from the tutorial
 	Texture brickTex("textures/vlziefgfw_2K_Albedo.jpg", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
 	brickTex.texUnit(groundShader, "tex0", 0);
-	//
+
+	//Texture environmentMap("textures/EnvironmentMap.jpg", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
+	//environmentMap.texUnit(fineMeshShader, "tex0", 0);
+	
+	unsigned int texture1;
+	glGenTextures(1, &texture1);
+	glBindTexture(GL_TEXTURE_2D, texture1);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	int widthI, heightI, nrChannels;
+	
+	unsigned char* data = stbi_load("./textures/EnvironmentMap.jpg", &widthI, &heightI, &nrChannels, 0);
+	if (data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthI, heightI, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
+	
+
+
+	
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	//
 	//// Enables the Depth Buffer
@@ -576,13 +604,20 @@ int main(int argc, char** argv)
 		glBindTexture(GL_TEXTURE_2D, depthMap);
 		renderQuad();
 		*/
+		//glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertUniformsVect);
+		//file->normals[0];
 
-
+		for (int i = 0; i < file->normals.size(); i++) {
+			fineFile->normals[i] = file->normals[i];
+		}
+		fineFile->bufferData();
 
 		glBindVertexArray(myFineMeshVAO);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(fineMeshShader);
+
+		glUniform1i(glGetUniformLocation(fineMeshShader, "texture1"), 0);
 
 		camera.Inputs(window);
 		// Updates and exports the camera matrix to the Vertex Shader
@@ -601,8 +636,13 @@ int main(int argc, char** argv)
 		mat4 proj = perspective(45.0f, (float)width / (float)height, 0.1f, 100.0f);
 		glUniformMatrix4fv(glGetUniformLocation(fineMeshShader, "proj_matrix"), 1, GL_FALSE, value_ptr(proj));
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+
+		//glUniform1fv(glGetUniformLocation(fineMeshShader, "samples"), 6561, &(file->normals[0]));
+
 		//Set shader uniforms
-		glUniform3f(glGetUniformLocation(fineMeshShader, "light_pos"), 1.0f, 1.0f, -1.0f);
+		//glUniform3f(glGetUniformLocation(fineMeshShader, "light_pos"), 1.0f, 1.0f, -1.0f);
 
 
 		// Note that this version of the draw command uses the
@@ -708,6 +748,12 @@ int main(int argc, char** argv)
 		glfwSwapBuffers(window);
 		// Take care of all GLFW events
 		glfwPollEvents();
+
+		//std::cout << "Normals: " << file->normals.size()<< "\n";
+		//std::cout << "Vertices: " << file->vertices.size() << "\n";
+
+		//std::cout << "Normals1: " << fineFile->normals.size() << "\n";
+		//std::cout << "Vertices1: " << fineFile->vertices.size() << "\n";
 	}
 
 

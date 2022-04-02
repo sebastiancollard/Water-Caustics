@@ -1,53 +1,36 @@
 #version 330 core
 
 // Positions/Coordinates
-layout (location = 0) in vec3 position;
+layout (location = 0) in vec4 position;
 // Colors
-layout (location = 1) in vec3 normal;
+layout (location = 1) in vec3 normal; // This is the normals for the wave mesh
 
 
 // Outputs the color for the Fragment Shader
 out vec3 color;
+out vec3 intercept;
 
 // Imports the camera matrix from the main function
 uniform mat4 camMatrix;
 uniform mat4 model;
-uniform float time;
 
-//shader constants
-//const float amplitude = 0.06125;
-const float amplitude = 0.6125;
-const float frequency = 4;
-//const float amplitude = 0.2;
-//const float frequency = 2;
-const float PI = 3.14159;
+//uniform float samples[6561];
 
-float PHI = 1.61803398874989484820459;  // = Golden Ratio   
-
-float gold_noise(in vec2 xy, in float seed){
-       return fract(tan(distance(xy*PHI, xy)*seed)*xy.x);
-}
 
 void main()
 {
-	//get the Euclidean distance of the current vertex from the center of the mesh
-	//float distance = length(aPos);  
-	//create a sin function using the distance, multiply frequency and add the elapsed time
-	//float y = amplitude/1.5*sin(-PI*distance*frequency+time*2)*sin(-PI*aPos.x*frequency*50+time*2)*sin(-PI*aPos.x*frequency+time*3)*sin(-PI*aPos.z*frequency/2+time*4)*gold_noise(vec2(10.f), 12) + amplitude*sin(-PI*aPos.x*aPos.z*frequency/8+time*2) + amplitude*sin(-PI*aPos.x*frequency/16+time*2) + amplitude/10*sin(-PI*distance*frequency*5+time*2)*gold_noise(vec2(10.f), 100);	
-	//float y= amplitude*sin(-PI*distance*frequency+time);
-	//if(distance>0.5f){
-	
-//	float y = amplitude*sin(-PI*distance*frequency+time);
-//	if(distance <0.5f){
-//		y = amplitude/1.5*sin(-PI*distance*frequency+time*2)*sin(-PI*aPos.x*frequency*50+time*2)*sin(-PI*aPos.x*frequency+time*3)*sin(-PI*aPos.z*frequency/2+time*4)*gold_noise(vec2(10.f), 12) + amplitude*sin(-PI*aPos.x*aPos.z*frequency/8+time*2) + amplitude*sin(-PI*aPos.x*frequency/16+time*2) + amplitude/10*sin(-PI*distance*frequency*5+time*2)*gold_noise(vec2(10.f), 100);
-//	}
-//	}
-//	else{/
-//	y = 0.0f;
-//	}
-	//float y = amplitude*sin((sqrt(aPos.x * aPos.x + aPos.z * aPos.z)/1.0f + time) * -2*PI);
-	// Outputs the positions/coordinates of all vertices
-	gl_Position = camMatrix * vec4(position, 1.0);
-	// Assigns the colors from the Vertex Data to "color"
+	// https://www.khronos.org/opengl/wiki/Vertex_Shader#:~:text=Vertex%20shaders%20are%20fed%20Vertex,input%20vertices%20to%20output%20vertices.
+	// gl_vertexID
+	gl_Position = camMatrix * position;
+	// 6561
+	// Get normal for location
+	//float a = float(gl_VertexID) / 6561.0;
+	//float x= samples[gl_VertexID*3];
+	//float y= samples[gl_VertexID*3 + 1];
+	//float z = samples[gl_VertexID*3 + 2];
+
+
+	float distance = (0.0f - position.y)/ normal.y;
+	intercept = position.xyz + (distance * normal);
 	color = normal;
 }
