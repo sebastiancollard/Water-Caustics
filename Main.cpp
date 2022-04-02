@@ -607,6 +607,73 @@ int main(int argc, char** argv)
 		//glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertUniformsVect);
 		//file->normals[0];
 
+		
+
+
+		/*
+		// Tell OpenGL which Shader Program we want to use
+		//shaderProgram.Activate();
+		//std::cout << glfwGetTime() << "\n";
+		glUseProgram(myShaderProgram);
+		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
+		float time = glfwGetTime();
+		for (int i = 0; i < file->vertices.size(); i += 4) {
+			float x = file->vertices[i];
+			float y = file->vertices[i + 1];
+			float z = file->vertices[i + 2];
+			float dist = glm::length(glm::vec3(x, 0, z));
+			file->vertices[i + 1] = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * sin(-PI * x * frequency * 50 + time * 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4) * gold_noise(vec2(10.f), 12);
+			file->vertices[i + 1] += amplitude * sin(-PI * x * z * frequency / 8 + time * 2);
+			file->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
+			file->vertices[i + 1] += amplitude / 10 * sin(-PI * dist * frequency * 5 + time * 2) * gold_noise(vec2(10.f), 100);
+		}
+		file->calculateNormals();
+		file->bufferData();
+		// Handles camera inputs
+		camera.Inputs(window);
+		// Updates and exports the camera matrix to the Vertex Shader
+		camera.Matrix(45.0f, 0.1f, 100.0f, myShaderProgram, "camMatrix");
+		glBindVertexArray(myVAO);
+		renderScene();
+		glBindVertexArray(0);
+		*/
+		
+		
+		
+		
+
+
+
+
+		// DRAW GROUND FIRST
+
+
+		//// Binds texture so that is appears in rendering
+		//brickTex.Bind();
+		//// Bind the VAO so OpenGL knows to use it
+		VAO1.Bind();
+		//// Draw primitives, number of indices, datatype of indices, index of indices
+		//glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(int), GL_UNSIGNED_INT, 0);
+		//// Swap the back buffer with the front buffer
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		groundShader.Activate();
+		brickTex.Bind();
+		//glBindVertexArray(VAO);
+		camera.Matrix(45.0f, 0.1f, 100.0f, groundShader.ID, "camMatrix");
+		////glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		//
+		////simpleDepthShader.use();
+		////simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		VAO1.Unbind();
+
+		
+		
+
+
+		// DRAW CAUSTICS SECOND
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		for (int i = 0; i < file->normals.size(); i++) {
 			fineFile->normals[i] = file->normals[i];
 		}
@@ -614,7 +681,6 @@ int main(int argc, char** argv)
 
 		glBindVertexArray(myFineMeshVAO);
 
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(fineMeshShader);
 
 		glUniform1i(glGetUniformLocation(fineMeshShader, "texture1"), 0);
@@ -652,69 +718,9 @@ int main(int argc, char** argv)
 		glBindVertexArray(0);
 
 
-		/*
-		// Tell OpenGL which Shader Program we want to use
-		//shaderProgram.Activate();
-		//std::cout << glfwGetTime() << "\n";
-		glUseProgram(myShaderProgram);
-		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
-		float time = glfwGetTime();
-		for (int i = 0; i < file->vertices.size(); i += 4) {
-			float x = file->vertices[i];
-			float y = file->vertices[i + 1];
-			float z = file->vertices[i + 2];
-			float dist = glm::length(glm::vec3(x, 0, z));
-			file->vertices[i + 1] = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * sin(-PI * x * frequency * 50 + time * 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4) * gold_noise(vec2(10.f), 12);
-			file->vertices[i + 1] += amplitude * sin(-PI * x * z * frequency / 8 + time * 2);
-			file->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
-			file->vertices[i + 1] += amplitude / 10 * sin(-PI * dist * frequency * 5 + time * 2) * gold_noise(vec2(10.f), 100);
-		}
-		file->calculateNormals();
-		file->bufferData();
-		// Handles camera inputs
-		camera.Inputs(window);
-		// Updates and exports the camera matrix to the Vertex Shader
-		camera.Matrix(45.0f, 0.1f, 100.0f, myShaderProgram, "camMatrix");
-		glBindVertexArray(myVAO);
-		renderScene();
-		glBindVertexArray(0);
-		*/
-		
-		
-		
 
 
-
-
-
-
-		// DRAW GROUND FIRST
-
-
-		//// Binds texture so that is appears in rendering
-		//brickTex.Bind();
-		//// Bind the VAO so OpenGL knows to use it
-		VAO1.Bind();
-		//// Draw primitives, number of indices, datatype of indices, index of indices
-		//glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(int), GL_UNSIGNED_INT, 0);
-		//// Swap the back buffer with the front buffer
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		groundShader.Activate();
-		brickTex.Bind();
-		//glBindVertexArray(VAO);
-		camera.Matrix(45.0f, 0.1f, 100.0f, groundShader.ID, "camMatrix");
-		////glDrawArrays(GL_TRIANGLES, 0, 3);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		//
-		////simpleDepthShader.use();
-		////simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-		VAO1.Unbind();
-
-		
-		
-
-
-		// DRAW WAVE AFTER, FOR BLENDING/TRANSPARENCY
+		// DRAW WAVE LAST, FOR BLENDING/TRANSPARENCY
 
 		// Tell OpenGL which Shader Program we want to use
 		//shaderProgram.Activate();
@@ -738,8 +744,8 @@ int main(int argc, char** argv)
 		camera.Inputs(window);
 		// Updates and exports the camera matrix to the Vertex Shader
 		camera.Matrix(45.0f, 0.1f, 100.0f, myShaderProgram, "camMatrix");
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glUniform3fv(glGetUniformLocation(myShaderProgram, "viewPos"), 1, &camera.Position[0]);
+		
 		glBindVertexArray(myVAO);
 		renderScene();
 		glBindVertexArray(0);

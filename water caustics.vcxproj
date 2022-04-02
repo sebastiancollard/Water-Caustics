@@ -159,6 +159,8 @@
   <ItemGroup>
     <None Include="default.frag" />
     <None Include="default.vert" />
+    <None Include="fineMesh.frag" />
+    <None Include="fineMesh.vert" />
     <None Include="ground.frag" />
     <None Include="ground.vert" />
   </ItemGroup>

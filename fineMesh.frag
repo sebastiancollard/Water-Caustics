@@ -15,6 +15,10 @@ void main()
 {
 	//FragColor = vec4((color), 1.0);
 	vec2 intercepts = vec2(intercept.x,intercept.z);
-	FragColor = vec4(texture(texture1, intercepts*0.8f).rgb,1.0f);
+	float r = texture(texture1, intercepts*0.8f).r;
+	float g = texture(texture1, intercepts*0.8f).g;
+	float b = texture(texture1, intercepts*0.8f).b;
+	float alpha = (r + g + b) / 3.f;
+	FragColor = vec4(vec3(1.), alpha);
 	//FragColor = vec4(intercept,1.0f);
 }
