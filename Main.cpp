@@ -30,19 +30,19 @@ GLuint myVAO;
 GLuint myFineMeshVAO;
 
 // Shader program to use
-GLuint myShaderProgram;
-GLuint fineMeshShader;
+GLuint waterShader;
+GLuint causticShader;
 
 // Shader filenames
-string vsFilename = "default.vert";
-string fsFilename = "default.frag";
+string waterVSFilename = "default.vert";
+string waterFSFilename = "default.frag";
 
-string vsFineFilename = "fineMesh.vert";
-string fsFineFilename = "fineMesh.frag";
+string causticVSFilename = "fineMesh.vert";
+string causticFSFilename = "fineMesh.frag";
 
 // ObjFile instance
-ObjFile* file;
-ObjFile* fineFile;
+ObjFile* waterMesh;
+ObjFile* causticMesh;
 
 // Transformation matrices
 mat4 rot = mat4(1.0f);
@@ -69,45 +69,6 @@ float gold_noise(vec2 xy, float seed) {
 
 const unsigned int width = 1920;
 const unsigned int height = 1080;
-
-
-const int NUM_X = 80; //total quads on X axis
-const int NUM_Z = 80; //total quads on Z axis
-
-const float SIZE_X = 4; //size of plane in world space
-const float SIZE_Z = 4;
-const float HALF_SIZE_X = SIZE_X / 2.0f;
-const float HALF_SIZE_Z = SIZE_Z / 2.0f;
-
-//ripple displacement speed
-const float SPEED = 2;
-
-//ripple mesh vertices and indices
-glm::vec3 vertexes[(NUM_X + 1) * (NUM_Z + 1)];
-const int TOTAL_INDICES = NUM_X * NUM_Z * 2 * 3;
-GLuint indices[TOTAL_INDICES];
-
-
-// Vertices coordinates
-//GLfloat vertices[] =
-//{ //     COORDINATES     /        COLORS      /   TexCoord  //
-//	-0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f,	0.0f, 0.0f,
-//	-0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	5.0f, 0.0f,
-//	 0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	0.0f, 0.0f,
-//	 0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f,	5.0f, 0.0f,
-//	 0.0f, 0.8f,  0.0f,     0.92f, 0.86f, 0.76f,	2.5f, 5.0f
-//};
-
-// Indices for vertices order
-//GLuint indices[] =
-//{
-//	0, 1, 2,
-//	0, 2, 3,
-//	0, 1, 4,
-//	1, 2, 4,
-//	2, 3, 4,
-//	3, 0, 4
-//};
 
 
 ////////////////////////////////////////////////////////////////
@@ -152,7 +113,7 @@ bool loadShaderFile(const char* filename, GLuint shader) {
 void renderScene() {
 	// Clear the window and the depth buffer
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram(myShaderProgram);
+	glUseProgram(waterShader);
 
 	//Scale based on input
 	scaling = scale(mat4(1.0f), vec3(scalar)) * scaling;
@@ -161,102 +122,19 @@ void renderScene() {
 	mat4 modelView = lookAt(vec3(0.0f, 0.0f, -10.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
 	modelView = rot * scaling * translation;
 	mat4 model = rot * scaling * translation;
-	glUniformMatrix4fv(glGetUniformLocation(myShaderProgram, "model"), 1, GL_FALSE, value_ptr(model));
+	glUniformMatrix4fv(glGetUniformLocation(waterShader, "model"), 1, GL_FALSE, value_ptr(model));
 
 	//Create and pass projection matrix
 	mat4 proj = perspective(45.0f, (float)width / (float)height, 0.1f, 100.0f);
-	glUniformMatrix4fv(glGetUniformLocation(myShaderProgram, "proj_matrix"), 1, GL_FALSE, value_ptr(proj));
+	glUniformMatrix4fv(glGetUniformLocation(waterShader, "proj_matrix"), 1, GL_FALSE, value_ptr(proj));
 
 	//Set shader uniforms
-	glUniform3f(glGetUniformLocation(myShaderProgram, "light_pos"), 1.0f, 1.0f, -1.0f);
+	glUniform3f(glGetUniformLocation(waterShader, "light_pos"), 1.0f, 1.0f, -1.0f);
 
 
 	// Note that this version of the draw command uses the
 	// bound index buffer to get the vertex coordinates.
-	file->draw(VERTEX_DATA, VERTEX_NORMAL);
-}
-
-
-void setupRenderingContextFineMesh() {
-	// Background
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glEnable(GL_DEPTH_TEST);
-
-	// First setup the shaders
-	//Now, let's setup the shaders
-	GLuint hVertexShader = glCreateShader(GL_VERTEX_SHADER);
-	GLuint hFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	fineMeshShader = (GLuint)NULL;
-	GLint testVal;
-
-	if (!loadShaderFile(vsFineFilename.c_str(), hVertexShader)) {
-		glDeleteShader(hVertexShader);
-		glDeleteShader(hFragmentShader);
-		cout << "The shader " << vsFineFilename << " could not be found." << endl;
-	}
-
-	if (!loadShaderFile(fsFineFilename.c_str(), hFragmentShader)) {
-		glDeleteShader(hVertexShader);
-		glDeleteShader(hFragmentShader);
-		cout << "The shader " << fsFineFilename << " could not be found." << endl;
-	}
-
-	glCompileShader(hVertexShader);
-	glCompileShader(hFragmentShader);
-
-	// Check for any error generated during shader compilation
-	glGetShaderiv(hVertexShader, GL_COMPILE_STATUS, &testVal);
-	if (testVal == GL_FALSE) {
-		char source[8192];
-		char infoLog[8192];
-		glGetShaderSource(hVertexShader, 8192, NULL, source);
-		glGetShaderInfoLog(hVertexShader, 8192, NULL, infoLog);
-		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
-		fprintf(stderr, "%s\n", infoLog);
-		glDeleteShader(hVertexShader);
-		glDeleteShader(hFragmentShader);
-	}
-	glGetShaderiv(hFragmentShader, GL_COMPILE_STATUS, &testVal);
-	if (testVal == GL_FALSE) {
-		char source[8192];
-		char infoLog[8192];
-		glGetShaderSource(hFragmentShader, 8192, NULL, source);
-		glGetShaderInfoLog(hFragmentShader, 8192, NULL, infoLog);
-		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
-		fprintf(stderr, "%s\n", infoLog);
-		glDeleteShader(hVertexShader);
-		glDeleteShader(hFragmentShader);
-	}
-
-	// Create the shader program and bind locations for the vertex
-	// attributes before linking. The linking process can also generate errors
-
-	fineMeshShader= glCreateProgram();
-	glAttachShader(fineMeshShader, hVertexShader);
-	glAttachShader(fineMeshShader, hFragmentShader);
-
-	glBindAttribLocation(fineMeshShader, VERTEX_DATA, "position");
-	//glBindAttribLocation( myShaderProgram, VERTEX_COLOUR, "vColor" );
-	glBindAttribLocation(fineMeshShader, VERTEX_NORMAL, "normal");
-
-	glLinkProgram(fineMeshShader);
-	glDeleteShader(hVertexShader);
-	glDeleteShader(hFragmentShader);
-	glGetProgramiv(fineMeshShader, GL_LINK_STATUS, &testVal);
-	if (testVal == GL_FALSE) {
-		char infoLog[1024];
-		glGetProgramInfoLog(fineMeshShader, 1024, NULL, infoLog);
-		cout << "The shader program (" << vsFineFilename << " + " << fsFineFilename << ") failed to link:" << endl << (const char*)infoLog << endl;
-		glDeleteProgram(fineMeshShader);
-		fineMeshShader = (GLuint)NULL;
-	}
-
-	// Now setup the geometry in a vertex buffer object
-
-	// setup the vertex state array object. All subsequent buffers will
-	// be bound to it.
-	glGenVertexArrays(1, &myFineMeshVAO);
-	glBindVertexArray(myFineMeshVAO);
+	waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
 }
 
 
@@ -269,71 +147,131 @@ void setupRenderingContext() {
 
 	// First setup the shaders
 	//Now, let's setup the shaders
-	GLuint hVertexShader = glCreateShader(GL_VERTEX_SHADER);
-	GLuint hFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	myShaderProgram = (GLuint)NULL;
+	GLuint waterVertexShader = glCreateShader(GL_VERTEX_SHADER);
+	GLuint waterFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	GLuint causticVertexShader = glCreateShader(GL_VERTEX_SHADER);
+	GLuint causticFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	causticShader = (GLuint)NULL;
+	waterShader = (GLuint)NULL;
 	GLint testVal;
 
-	if (!loadShaderFile(vsFilename.c_str(), hVertexShader)) {
-		glDeleteShader(hVertexShader);
-		glDeleteShader(hFragmentShader);
-		cout << "The shader " << vsFilename << " could not be found." << endl;
+	if (!loadShaderFile(waterVSFilename.c_str(), waterVertexShader)) {
+		glDeleteShader(waterVertexShader);
+		glDeleteShader(waterFragmentShader);
+		cout << "The shader " << waterVSFilename << " could not be found." << endl;
 	}
 
-	if (!loadShaderFile(fsFilename.c_str(), hFragmentShader)) {
-		glDeleteShader(hVertexShader);
-		glDeleteShader(hFragmentShader);
-		cout << "The shader " << fsFilename << " could not be found." << endl;
+	if (!loadShaderFile(waterFSFilename.c_str(), waterFragmentShader)) {
+		glDeleteShader(waterVertexShader);
+		glDeleteShader(waterFragmentShader);
+		cout << "The shader " << waterFSFilename << " could not be found." << endl;
 	}
 
-	glCompileShader(hVertexShader);
-	glCompileShader(hFragmentShader);
+	if (!loadShaderFile(causticVSFilename.c_str(), causticVertexShader)) {
+		glDeleteShader(causticVertexShader);
+		glDeleteShader(causticFragmentShader);
+		cout << "The shader " << causticVSFilename << " could not be found." << endl;
+	}
+
+	if (!loadShaderFile(causticFSFilename.c_str(), causticFragmentShader)) {
+		glDeleteShader(causticVertexShader);
+		glDeleteShader(causticFragmentShader);
+		cout << "The shader " << causticFSFilename << " could not be found." << endl;
+	}
+
+	glCompileShader(waterVertexShader);
+	glCompileShader(waterFragmentShader);
+	glCompileShader(causticVertexShader);
+	glCompileShader(causticFragmentShader);
 
 	// Check for any error generated during shader compilation
-	glGetShaderiv(hVertexShader, GL_COMPILE_STATUS, &testVal);
+	glGetShaderiv(waterVertexShader, GL_COMPILE_STATUS, &testVal);
 	if (testVal == GL_FALSE) {
 		char source[8192];
 		char infoLog[8192];
-		glGetShaderSource(hVertexShader, 8192, NULL, source);
-		glGetShaderInfoLog(hVertexShader, 8192, NULL, infoLog);
+		glGetShaderSource(waterVertexShader, 8192, NULL, source);
+		glGetShaderInfoLog(waterVertexShader, 8192, NULL, infoLog);
 		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
 		fprintf(stderr, "%s\n", infoLog);
-		glDeleteShader(hVertexShader);
-		glDeleteShader(hFragmentShader);
+		glDeleteShader(waterVertexShader);
+		glDeleteShader(waterFragmentShader);
 	}
-	glGetShaderiv(hFragmentShader, GL_COMPILE_STATUS, &testVal);
+	glGetShaderiv(waterFragmentShader, GL_COMPILE_STATUS, &testVal);
 	if (testVal == GL_FALSE) {
 		char source[8192];
 		char infoLog[8192];
-		glGetShaderSource(hFragmentShader, 8192, NULL, source);
-		glGetShaderInfoLog(hFragmentShader, 8192, NULL, infoLog);
+		glGetShaderSource(waterFragmentShader, 8192, NULL, source);
+		glGetShaderInfoLog(waterFragmentShader, 8192, NULL, infoLog);
 		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
 		fprintf(stderr, "%s\n", infoLog);
-		glDeleteShader(hVertexShader);
-		glDeleteShader(hFragmentShader);
+		glDeleteShader(waterVertexShader);
+		glDeleteShader(waterFragmentShader);
+	}
+
+	glGetShaderiv(causticVertexShader, GL_COMPILE_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char source[8192];
+		char infoLog[8192];
+		glGetShaderSource(causticVertexShader, 8192, NULL, source);
+		glGetShaderInfoLog(causticVertexShader, 8192, NULL, infoLog);
+		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
+		fprintf(stderr, "%s\n", infoLog);
+		glDeleteShader(causticVertexShader);
+		glDeleteShader(causticFragmentShader);
+	}
+	glGetShaderiv(causticFragmentShader, GL_COMPILE_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char source[8192];
+		char infoLog[8192];
+		glGetShaderSource(causticFragmentShader, 8192, NULL, source);
+		glGetShaderInfoLog(causticFragmentShader, 8192, NULL, infoLog);
+		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
+		fprintf(stderr, "%s\n", infoLog);
+		glDeleteShader(causticVertexShader);
+		glDeleteShader(causticFragmentShader);
 	}
 
 	// Create the shader program and bind locations for the vertex
 	// attributes before linking. The linking process can also generate errors
 
-	myShaderProgram = glCreateProgram();
-	glAttachShader(myShaderProgram, hVertexShader);
-	glAttachShader(myShaderProgram, hFragmentShader);
+	waterShader = glCreateProgram();
+	glAttachShader(waterShader, waterVertexShader);
+	glAttachShader(waterShader, waterFragmentShader);
 
-	glBindAttribLocation(myShaderProgram, VERTEX_DATA, "position");
+	glBindAttribLocation(waterShader, VERTEX_DATA, "position");
 	//glBindAttribLocation( myShaderProgram, VERTEX_COLOUR, "vColor" );
-	glBindAttribLocation(myShaderProgram, VERTEX_NORMAL, "normal");
+	glBindAttribLocation(waterShader, VERTEX_NORMAL, "normal");
 
-	glLinkProgram(myShaderProgram);
-	glDeleteShader(hVertexShader);
-	glDeleteShader(hFragmentShader);
-	glGetProgramiv(myShaderProgram, GL_LINK_STATUS, &testVal);
+	glLinkProgram(waterShader);
+	glDeleteShader(waterVertexShader);
+	glDeleteShader(waterFragmentShader);
+	glGetProgramiv(waterShader, GL_LINK_STATUS, &testVal);
 	if (testVal == GL_FALSE) {
 		char infoLog[1024];
-		glGetProgramInfoLog(myShaderProgram, 1024, NULL, infoLog);
-		cout << "The shader program (" << vsFilename << " + " << fsFilename << ") failed to link:" << endl << (const char*)infoLog << endl;
-		glDeleteProgram(myShaderProgram);
-		myShaderProgram = (GLuint)NULL;
+		glGetProgramInfoLog(waterShader, 1024, NULL, infoLog);
+		cout << "The shader program (" << waterVSFilename << " + " << waterFSFilename << ") failed to link:" << endl << (const char*)infoLog << endl;
+		glDeleteProgram(waterShader);
+		waterShader = (GLuint)NULL;
+	}
+
+	causticShader = glCreateProgram();
+	glAttachShader(causticShader, causticVertexShader);
+	glAttachShader(causticShader, causticFragmentShader);
+
+	glBindAttribLocation(causticShader, VERTEX_DATA, "position");
+	//glBindAttribLocation( myShaderProgram, VERTEX_COLOUR, "vColor" );
+	glBindAttribLocation(causticShader, VERTEX_NORMAL, "normal");
+
+	glLinkProgram(causticShader);
+	glDeleteShader(causticVertexShader);
+	glDeleteShader(causticFragmentShader);
+	glGetProgramiv(causticShader, GL_LINK_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char infoLog[1024];
+		glGetProgramInfoLog(causticShader, 1024, NULL, infoLog);
+		cout << "The shader program (" << causticVSFilename << " + " << causticFSFilename << ") failed to link:" << endl << (const char*)infoLog << endl;
+		glDeleteProgram(causticShader);
+		causticShader = (GLuint)NULL;
 	}
 
 	// Now setup the geometry in a vertex buffer object
@@ -352,13 +290,13 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	file = new ObjFile(argv[1]);
-	if (file->numVertices() == 0) {
+	waterMesh = new ObjFile(argv[1]);
+	if (waterMesh->numVertices() == 0) {
 		cout << "Could not load file " << argv[1] << ".\n";
 		exit(EXIT_FAILURE);
 	}
 
-	fineFile = new ObjFile(argv[1]);
+	causticMesh = new ObjFile(argv[1]);
 	// Initialize GLFW
 	glfwInit();
 
@@ -390,11 +328,7 @@ int main(int argc, char** argv)
 
 
 	// Generates Shader object using shaders default.vert and default.frag
-	Shader shaderProgram("default.vert", "default.frag");
 	Shader groundShader("ground.vert", "ground.frag");
-	// Shadow Mapping Shaders
-	Shader simpleDepthShader("shadow.vert", "shadow.frag");
-	Shader debugDepthShader("shadowDebug.vert", "shadowDebug.frag");
 
 
 
@@ -413,22 +347,22 @@ int main(int argc, char** argv)
 	   0, 1, 3, // first triangle
 	   1, 2, 3  // second triangle
 	};
-	VAO VAO1;
-	VAO1.Bind();
+	VAO groundVAO;
+	groundVAO.Bind();
 
 	// Generates Vertex Buffer Object and links it to vertices
-	VBO VBO1(vertGround, sizeof(vertGround));
+	VBO groundVBO(vertGround, sizeof(vertGround));
 	// Generates Element Buffer Object and links it to indices
-	EBO EBO1(indexGround, sizeof(indexGround));
+	EBO groundEBO(indexGround, sizeof(indexGround));
 
 	// Links VBO attributes such as coordinates and colors to VAO
-	VAO1.LinkAttrib(VBO1, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
-	VAO1.LinkAttrib(VBO1, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	VAO1.LinkAttrib(VBO1, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	groundVAO.LinkAttrib(groundVBO, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+	groundVAO.LinkAttrib(groundVBO, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	groundVAO.LinkAttrib(groundVBO, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	// Unbind all to prevent accidentally modifying them
-	VAO1.Unbind();
-	VBO1.Unbind();
-	EBO1.Unbind();
+	groundVAO.Unbind();
+	groundVBO.Unbind();
+	groundEBO.Unbind();
 	unsigned int VBO, VAO, EBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -484,165 +418,43 @@ int main(int argc, char** argv)
 
 
 	
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	//
+
 	//// Enables the Depth Buffer
 	glEnable(GL_DEPTH_TEST);
-	//
 	//// Creates camera object
 	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
-	//
-	//// Shadow Mapping Stuff
-	//unsigned int depthMapFBO;
-	//glGenFramebuffers(1, &depthMapFBO);
-	//
-	//const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-	//
-	//// Depth map for shadowMappings
-	//unsigned int depthMap;
-	//glGenTextures(1, &depthMap);
-	//glBindTexture(GL_TEXTURE_2D, depthMap);
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-	//	SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	//
-	//glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-	//glDrawBuffer(GL_NONE);
-	//glReadBuffer(GL_NONE);
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-
-
-
-
-
-
-	//debugDepthShader.Activate();
-	//glUniform1i(glGetUniformLocation(debugDepthShader.ID, "DepthMap"), 0);
 
 	setupRenderingContext();
-	file->calculateNormals();
-	glGenBuffers(1, &file->vertexBuffer);
-	glGenBuffers(1, &file->indexBuffer);
-	file->bufferData();
-	scaling = file->getFitScale();
-	translation = file->getFitTranslate();
+	waterMesh->calculateNormals();
+	glGenBuffers(1, &waterMesh->vertexBuffer);
+	glGenBuffers(1, &waterMesh->indexBuffer);
+	waterMesh->bufferData();
+	scaling = waterMesh->getFitScale();
+	translation = waterMesh->getFitTranslate();
 	
-	setupRenderingContextFineMesh();
-	fineFile->calculateNormals();
-	glGenBuffers(1, &fineFile->vertexBuffer);
-	glGenBuffers(1, &fineFile->indexBuffer);
-	fineFile->bufferData();
-	scaling = fineFile->getFitScale();
-	translation = fineFile->getFitTranslate();
+	//setupRenderingContextFineMesh();
+	causticMesh->calculateNormals();
+	glGenBuffers(1, &causticMesh->vertexBuffer);
+	glGenBuffers(1, &causticMesh->indexBuffer);
+	causticMesh->bufferData();
+	scaling = causticMesh->getFitScale();
+	translation = causticMesh->getFitTranslate();
 
-	for (int i = 0; i < fineFile->vertices.size(); i += 4) {
-		fineFile->vertices[i + 1] = -1.4f;
+	for (int i = 0; i < causticMesh->vertices.size(); i += 4) {
+		causticMesh->vertices[i + 1] = -1.48f;
 	}
-	fineFile->calculateNormals();
-	fineFile->bufferData();
+	causticMesh->calculateNormals();
+	causticMesh->bufferData();
 
 
 	// Main while loop
 	while (!glfwWindowShouldClose(window))
 	{
-		//for (int i = 0; i < (NUM_X + 1) * (NUM_Z + 1) * 8; i) {
-		//	//get the Euclidean distance of the current vertex from the center of the mesh
-		//	float distance = glm::length(glm::vec3(vertices[i], vertices[i + 1], vertices[i + 2]));
-		//	//create a sin function using the distance, multiply frequency and add the elapsed time
-		//	float y = amplitude * sin(-PI * distance * frequency + glfwGetTime());
-		//	vertices[i + 1] += glfwGetTime();
-		//	i += 8;
-		//}
-
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 		// Specify the color of the background
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		// Clean the back buffer and depth buffer
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		// Shadow mapping Stuff
-		/*
-		float near_plane = 1.0f, far_plane = 10.5f;
-		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-		//glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, near_plane, far_plane);
-		glm::mat4 lightView = glm::lookAt(glm::vec3(0.0f,4.0f, 0.1f),
-			glm::vec3(0.0f, 0.0f, 0.0f),
-			glm::vec3(0.0f, 1.0f, 0.0f));
-		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-
-		simpleDepthShader.Activate();
-		glUniformMatrix4fv(glGetUniformLocation(simpleDepthShader.ID, "lightSpaceMatrix"),1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
-
-		
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-			glClear(GL_DEPTH_BUFFER_BIT);
-			glActiveTexture(GL_TEXTURE0);
-			brickTex.Bind();
-			glm::mat4 model = glm::mat4(1.0f);
-			glUniformMatrix4fv(glGetUniformLocation(simpleDepthShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
-			glBindVertexArray(VAO);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		
-		glViewport(0, 0, width, height);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		debugDepthShader.Activate();
-		glUniform1f(glGetUniformLocation(debugDepthShader.ID, "near_plane"), near_plane);
-		glUniform1f(glGetUniformLocation(debugDepthShader.ID, "far_plane"), far_plane);
-		//debugDepthShader.setFloat("near_plane", near_plane);
-		//debugDepthQuad.setFloat("far_plane", far_plane);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
-		renderQuad();
-		*/
-		//glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertUniformsVect);
-		//file->normals[0];
-
-		
-
-
-		/*
-		// Tell OpenGL which Shader Program we want to use
-		//shaderProgram.Activate();
-		//std::cout << glfwGetTime() << "\n";
-		glUseProgram(myShaderProgram);
-		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
-		float time = glfwGetTime();
-		for (int i = 0; i < file->vertices.size(); i += 4) {
-			float x = file->vertices[i];
-			float y = file->vertices[i + 1];
-			float z = file->vertices[i + 2];
-			float dist = glm::length(glm::vec3(x, 0, z));
-			file->vertices[i + 1] = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * sin(-PI * x * frequency * 50 + time * 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4) * gold_noise(vec2(10.f), 12);
-			file->vertices[i + 1] += amplitude * sin(-PI * x * z * frequency / 8 + time * 2);
-			file->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
-			file->vertices[i + 1] += amplitude / 10 * sin(-PI * dist * frequency * 5 + time * 2) * gold_noise(vec2(10.f), 100);
-		}
-		file->calculateNormals();
-		file->bufferData();
-		// Handles camera inputs
-		camera.Inputs(window);
-		// Updates and exports the camera matrix to the Vertex Shader
-		camera.Matrix(45.0f, 0.1f, 100.0f, myShaderProgram, "camMatrix");
-		glBindVertexArray(myVAO);
-		renderScene();
-		glBindVertexArray(0);
-		*/
-		
-		
-		
-		
-
-
 
 
 		// DRAW GROUND FIRST
@@ -651,7 +463,7 @@ int main(int argc, char** argv)
 		//// Binds texture so that is appears in rendering
 		//brickTex.Bind();
 		//// Bind the VAO so OpenGL knows to use it
-		VAO1.Bind();
+		groundVAO.Bind();
 		//// Draw primitives, number of indices, datatype of indices, index of indices
 		//glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(int), GL_UNSIGNED_INT, 0);
 		//// Swap the back buffer with the front buffer
@@ -665,7 +477,7 @@ int main(int argc, char** argv)
 		//
 		////simpleDepthShader.use();
 		////simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-		VAO1.Unbind();
+		groundVAO.Unbind();
 
 		
 		
@@ -674,20 +486,20 @@ int main(int argc, char** argv)
 		// DRAW CAUSTICS SECOND
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		for (int i = 0; i < file->normals.size(); i++) {
-			fineFile->normals[i] = file->normals[i];
+		for (int i = 0; i < waterMesh->normals.size(); i++) {
+			causticMesh->normals[i] = waterMesh->normals[i];
 		}
-		fineFile->bufferData();
+		causticMesh->bufferData();
 
-		glBindVertexArray(myFineMeshVAO);
+		glBindVertexArray(myVAO);
 
-		glUseProgram(fineMeshShader);
+		glUseProgram(causticShader);
 
-		glUniform1i(glGetUniformLocation(fineMeshShader, "texture1"), 0);
+		glUniform1i(glGetUniformLocation(causticShader, "texture1"), 0);
 
 		camera.Inputs(window);
 		// Updates and exports the camera matrix to the Vertex Shader
-		camera.Matrix(45.0f, 0.1f, 100.0f, fineMeshShader, "camMatrix");
+		camera.Matrix(45.0f, 0.1f, 100.0f, causticShader, "camMatrix");
 
 		//Scale based on input
 		scaling = scale(mat4(1.0f), vec3(scalar)) * scaling;
@@ -696,11 +508,11 @@ int main(int argc, char** argv)
 		mat4 modelView = lookAt(vec3(0.0f, 0.0f, -10.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
 		modelView = rot * scaling * translation;
 		mat4 model = rot * scaling * translation;
-		glUniformMatrix4fv(glGetUniformLocation(fineMeshShader, "model"), 1, GL_FALSE, value_ptr(model));
+		glUniformMatrix4fv(glGetUniformLocation(causticShader, "model"), 1, GL_FALSE, value_ptr(model));
 
 		//Create and pass projection matrix
 		mat4 proj = perspective(45.0f, (float)width / (float)height, 0.1f, 100.0f);
-		glUniformMatrix4fv(glGetUniformLocation(fineMeshShader, "proj_matrix"), 1, GL_FALSE, value_ptr(proj));
+		glUniformMatrix4fv(glGetUniformLocation(causticShader, "proj_matrix"), 1, GL_FALSE, value_ptr(proj));
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1);
@@ -710,10 +522,9 @@ int main(int argc, char** argv)
 		//Set shader uniforms
 		//glUniform3f(glGetUniformLocation(fineMeshShader, "light_pos"), 1.0f, 1.0f, -1.0f);
 
-
 		// Note that this version of the draw command uses the
 		// bound index buffer to get the vertex coordinates.
-		fineFile->draw(VERTEX_DATA, VERTEX_NORMAL);
+		causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
 
 		glBindVertexArray(0);
 
@@ -725,26 +536,26 @@ int main(int argc, char** argv)
 		// Tell OpenGL which Shader Program we want to use
 		//shaderProgram.Activate();
 		//std::cout << glfwGetTime() << "\n";
-		glUseProgram(myShaderProgram);
+		glUseProgram(waterShader);
 		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
 		float time = glfwGetTime();
-		for (int i = 0; i < file->vertices.size(); i += 4) {
-			float x = file->vertices[i];
-			float y = file->vertices[i + 1];
-			float z = file->vertices[i + 2];
+		for (int i = 0; i < waterMesh->vertices.size(); i += 4) {
+			float x = waterMesh->vertices[i];
+			float y = waterMesh->vertices[i + 1];
+			float z = waterMesh->vertices[i + 2];
 			float dist = glm::length(glm::vec3(x, 0, z));
-			file->vertices[i + 1] = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * sin(-PI * x * frequency * 50 + time * 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4) * gold_noise(vec2(10.f), 12);
-			file->vertices[i + 1] += amplitude * sin(-PI * x * z * frequency / 8 + time * 2);
-			file->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
-			file->vertices[i + 1] += amplitude / 10 * sin(-PI * dist * frequency * 5 + time * 2) * gold_noise(vec2(10.f), 100);
+			waterMesh->vertices[i + 1] = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * sin(-PI * x * frequency * 50 + time * 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4) * gold_noise(vec2(10.f), 12);
+			waterMesh->vertices[i + 1] += amplitude * sin(-PI * x * z * frequency / 8 + time * 2);
+			waterMesh->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
+			waterMesh->vertices[i + 1] += amplitude / 10 * sin(-PI * dist * frequency * 5 + time * 2) * gold_noise(vec2(10.f), 100);
 		}
-		file->calculateNormals();
-		file->bufferData();
+		waterMesh->calculateNormals();
+		waterMesh->bufferData();
 		// Handles camera inputs
 		camera.Inputs(window);
 		// Updates and exports the camera matrix to the Vertex Shader
-		camera.Matrix(45.0f, 0.1f, 100.0f, myShaderProgram, "camMatrix");
-		glUniform3fv(glGetUniformLocation(myShaderProgram, "viewPos"), 1, &camera.Position[0]);
+		camera.Matrix(45.0f, 0.1f, 100.0f, waterShader, "camMatrix");
+		glUniform3fv(glGetUniformLocation(waterShader, "viewPos"), 1, &camera.Position[0]);
 		
 		glBindVertexArray(myVAO);
 		renderScene();
