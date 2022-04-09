@@ -55,5 +55,5 @@ void main()
     
 
 	FragColor = vec4(result, diff + specular);
-	//FragColor = vec4(result, 1.);
+	//FragColor = vec4(vec3(0.75), 1.);
 }
