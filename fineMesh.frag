@@ -16,7 +16,7 @@ void main()
 	float intensity = 1.f;
 	//FragColor = vec4((color), 1.0);
 	vec2 intercepts = vec2(intercept.x,intercept.z);
-	float map = dot(color, vec3(0, 1, 0)) * 10 - 0.5;
+	float map = max(dot(color, vec3(0, 1, 0)) * 100 - 0.5, 0);
 	float r = texture(texture1, vec2(map)).r;
 	float g = texture(texture1, vec2(map)).g;
 	float b = texture(texture1, vec2(map)).b;
