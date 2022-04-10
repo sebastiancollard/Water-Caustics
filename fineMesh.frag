@@ -25,5 +25,7 @@ void main()
 	b *= intensity;
 	float alpha = (r + g + b) / 3.f;
 	FragColor = vec4(vec3(1.), alpha);
+	//FragColor = vec4(texture(texture1, intercepts*0.8f).rgb,1.0f);
+	//FragColor = vec4(texture(texture1, vec2(0.5f,0.5f)).rgb,1.0f);
 	//FragColor = vec4(intercept,1.0f);
 }

@@ -363,6 +363,7 @@ int main(int argc, char** argv)
 	groundVAO.Unbind();
 	groundVBO.Unbind();
 	groundEBO.Unbind();
+
 	unsigned int VBO, VAO, EBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -385,8 +386,12 @@ int main(int argc, char** argv)
 	
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
+
 	
 	//// Original code from the tutorial
+	//Texture brickTex("textures/vlziefgfw_2K_Albedo.jpg", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
+	//brickTex.texUnit(groundShader, "tex0", 0);
+
 	Texture brickTex("textures/vlziefgfw_2K_Albedo.jpg", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
 	brickTex.texUnit(groundShader, "tex0", 0);
 
@@ -398,10 +403,16 @@ int main(int argc, char** argv)
 	glBindTexture(GL_TEXTURE_2D, texture1);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);	// set texture wrapping to GL_REPEAT (default wrapping method)
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 
 	int widthI, heightI, nrChannels;
+	//stbi_set
+	//stbi_set_flip_vertically_on_load(true);
 	
 	unsigned char* data = stbi_load("./textures/env.png", &widthI, &heightI, &nrChannels, 0);
 	if (data)
@@ -414,6 +425,7 @@ int main(int argc, char** argv)
 		std::cout << "Failed to load texture" << std::endl;
 	}
 	stbi_image_free(data);
+	
 	
 
 
@@ -489,6 +501,7 @@ int main(int argc, char** argv)
 		for (int i = 0; i < waterMesh->normals.size(); i++) {
 			causticMesh->normals[i] = waterMesh->normals[i];
 		}
+		
 		causticMesh->bufferData();
 
 
@@ -528,7 +541,7 @@ int main(int argc, char** argv)
 		causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
 
 		glBindVertexArray(0);
-
+		
 
 
 
@@ -540,6 +553,7 @@ int main(int argc, char** argv)
 		glUseProgram(waterShader);
 		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
 		float time = glfwGetTime();
+		
 		for (int i = 0; i < waterMesh->vertices.size(); i += 4) {
 			float x = waterMesh->vertices[i];
 			float y = waterMesh->vertices[i + 1];
@@ -551,6 +565,9 @@ int main(int argc, char** argv)
 			waterMesh->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
 			waterMesh->vertices[i + 1] += amplitude / 10 * sin(-PI * dist * frequency * 5 + time * 2) * gold_noise(vec2(10.f), 100);
 		}
+		
+		
+		
 		waterMesh->calculateNormals();
 		waterMesh->bufferData();
 		// Handles camera inputs
