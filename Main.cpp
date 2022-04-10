@@ -414,10 +414,10 @@ int main(int argc, char** argv)
 	//stbi_set
 	//stbi_set_flip_vertically_on_load(true);
 	
-	unsigned char* data = stbi_load("./textures/EnvironmentMap.jpg", &widthI, &heightI, &nrChannels, 0);
+	unsigned char* data = stbi_load("./textures/env.png", &widthI, &heightI, &nrChannels, 0);
 	if (data)
 	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthI, heightI, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthI, heightI, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else
@@ -464,13 +464,14 @@ int main(int argc, char** argv)
 	{
 
 		// Specify the color of the background
-		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		glClearColor(51.f / 255.f, 71.f / 255.f, 79.f / 255.f, 1.0f);
 		// Clean the back buffer and depth buffer
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
 		// DRAW GROUND FIRST
-
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		//// Binds texture so that is appears in rendering
 		//brickTex.Bind();
@@ -497,20 +498,16 @@ int main(int argc, char** argv)
 
 		// DRAW CAUSTICS SECOND
 		
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		//glEnable(GL_FILL);
-		
 		for (int i = 0; i < waterMesh->normals.size(); i++) {
 			causticMesh->normals[i] = waterMesh->normals[i];
 		}
 		
 		causticMesh->bufferData();
 
-		glBindVertexArray(myVAO);
+
 
 		glUseProgram(causticShader);
+		glBindVertexArray(myVAO);
 
 		glUniform1i(glGetUniformLocation(causticShader, "texture1"), 0);
 
@@ -562,7 +559,8 @@ int main(int argc, char** argv)
 			float y = waterMesh->vertices[i + 1];
 			float z = waterMesh->vertices[i + 2];
 			float dist = glm::length(glm::vec3(x, 0, z));
-			waterMesh->vertices[i + 1] = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * sin(-PI * x * frequency * 50 + time * 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4) * gold_noise(vec2(10.f), 12);
+			//waterMesh->vertices[i + 1] = 0;
+			waterMesh->vertices[i + 1] = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time * 2)+1)/2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4) * gold_noise(vec2(10.f), 12);
 			waterMesh->vertices[i + 1] += amplitude * sin(-PI * x * z * frequency / 8 + time * 2);
 			waterMesh->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
 			waterMesh->vertices[i + 1] += amplitude / 10 * sin(-PI * dist * frequency * 5 + time * 2) * gold_noise(vec2(10.f), 100);
@@ -577,11 +575,11 @@ int main(int argc, char** argv)
 		// Updates and exports the camera matrix to the Vertex Shader
 		camera.Matrix(45.0f, 0.1f, 100.0f, waterShader, "camMatrix");
 		glUniform3fv(glGetUniformLocation(waterShader, "viewPos"), 1, &camera.Position[0]);
-		
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glBindVertexArray(myVAO);
 		renderScene();
 		glBindVertexArray(0);
-
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		glfwSwapBuffers(window);
 		// Take care of all GLFW events

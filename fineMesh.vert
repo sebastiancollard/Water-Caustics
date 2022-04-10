@@ -32,5 +32,6 @@ void main()
 
 	float distance = (0.0f - position.y)/ normal.y;
 	intercept = position.xyz + (distance * normal);
+	//intercept = position.xyz;
 	color = normal;
 }
