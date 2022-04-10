@@ -403,10 +403,10 @@ int main(int argc, char** argv)
 
 	int widthI, heightI, nrChannels;
 	
-	unsigned char* data = stbi_load("./textures/EnvironmentMap.jpg", &widthI, &heightI, &nrChannels, 0);
+	unsigned char* data = stbi_load("./textures/env.png", &widthI, &heightI, &nrChannels, 0);
 	if (data)
 	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthI, heightI, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthI, heightI, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else
@@ -458,7 +458,8 @@ int main(int argc, char** argv)
 
 
 		// DRAW GROUND FIRST
-
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		//// Binds texture so that is appears in rendering
 		//brickTex.Bind();
@@ -484,16 +485,16 @@ int main(int argc, char** argv)
 
 
 		// DRAW CAUSTICS SECOND
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		
 		for (int i = 0; i < waterMesh->normals.size(); i++) {
 			causticMesh->normals[i] = waterMesh->normals[i];
 		}
 		causticMesh->bufferData();
 
-		glBindVertexArray(myVAO);
+
 
 		glUseProgram(causticShader);
+		glBindVertexArray(myVAO);
 
 		glUniform1i(glGetUniformLocation(causticShader, "texture1"), 0);
 
@@ -544,6 +545,7 @@ int main(int argc, char** argv)
 			float y = waterMesh->vertices[i + 1];
 			float z = waterMesh->vertices[i + 2];
 			float dist = glm::length(glm::vec3(x, 0, z));
+			//waterMesh->vertices[i + 1] = 0;
 			waterMesh->vertices[i + 1] = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time * 2)+1)/2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4) * gold_noise(vec2(10.f), 12);
 			waterMesh->vertices[i + 1] += amplitude * sin(-PI * x * z * frequency / 8 + time * 2);
 			waterMesh->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
