@@ -36,6 +36,7 @@ public:
 	GLuint vertexBuffer, indexBuffer;
 	vector<GLfloat> vertices, normals;
 	vector<GLuint> indices;
+	vector<GLfloat> tex;
 
 	vec3 max, min;
 protected:

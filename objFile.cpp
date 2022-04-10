@@ -73,6 +73,8 @@ void ObjFile::draw(GLuint vertexLocation, GLuint normalLocation) {
 	glVertexAttribPointer(vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
 	glEnableVertexAttribArray(normalLocation);
 	glVertexAttribPointer(normalLocation, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(sizeof(GLfloat) * vertices.size()));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(sizeof(GLfloat) * vertices.size() + sizeof(GLfloat) * normals.size()));
 
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 }
@@ -150,7 +152,7 @@ void ObjFile::bufferData() {
 
 
 	glBufferData(GL_ARRAY_BUFFER,
-		sizeof(GLfloat) * vertices.size() + sizeof(GLfloat) * normals.size(),
+		sizeof(GLfloat) * vertices.size() + sizeof(GLfloat) * normals.size() + sizeof(GLfloat) *tex.size(),
 		NULL,
 		GL_STATIC_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER,
@@ -161,6 +163,10 @@ void ObjFile::bufferData() {
 		sizeof(GLfloat) * vertices.size(),
 		sizeof(GLfloat) * normals.size(),
 		normals.data());
+	glBufferSubData(GL_ARRAY_BUFFER,
+		sizeof(GLfloat) * vertices.size() + sizeof(GLfloat) * normals.size(),
+		sizeof(GLfloat) * tex.size(),
+		tex.data());
 
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
 		sizeof(GLuint) * indices.size(),

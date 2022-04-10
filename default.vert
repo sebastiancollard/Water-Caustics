@@ -4,6 +4,7 @@
 layout (location = 0) in vec3 position;
 // Colors
 layout (location = 1) in vec3 normal;
+layout (location = 2) in vec2 texcoord;
 
 
 // Outputs the color for the Fragment Shader

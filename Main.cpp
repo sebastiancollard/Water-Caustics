@@ -241,6 +241,7 @@ void setupRenderingContext() {
 	glBindAttribLocation(waterShader, VERTEX_DATA, "position");
 	//glBindAttribLocation( myShaderProgram, VERTEX_COLOUR, "vColor" );
 	glBindAttribLocation(waterShader, VERTEX_NORMAL, "normal");
+	glBindAttribLocation(waterShader, 2, "texcoord");
 
 	glLinkProgram(waterShader);
 	glDeleteShader(waterVertexShader);
@@ -261,6 +262,7 @@ void setupRenderingContext() {
 	glBindAttribLocation(causticShader, VERTEX_DATA, "position");
 	//glBindAttribLocation( myShaderProgram, VERTEX_COLOUR, "vColor" );
 	glBindAttribLocation(causticShader, VERTEX_NORMAL, "normal");
+	glBindAttribLocation(waterShader, 2, "texcoord");
 
 	glLinkProgram(causticShader);
 	glDeleteShader(causticVertexShader);
@@ -403,8 +405,8 @@ int main(int argc, char** argv)
 	glBindTexture(GL_TEXTURE_2D, texture1);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);	// set texture wrapping to GL_REPEAT (default wrapping method)
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	// set texture wrapping to GL_REPEAT (default wrapping method)
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -452,11 +454,28 @@ int main(int argc, char** argv)
 	scaling = causticMesh->getFitScale();
 	translation = causticMesh->getFitTranslate();
 
+	//unsigned int Tex;
+	//glGenBuffers(1, &Tex);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Tex);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexGround), indexGround, GL_STATIC_DRAW);
 	for (int i = 0; i < causticMesh->vertices.size(); i += 4) {
 		causticMesh->vertices[i + 1] = -1.48f;
+
+
+		float x = causticMesh->vertices[i];
+		float z = causticMesh->vertices[i + 2];
+		causticMesh->tex.push_back((x + 2.0f) /4.0f);
+		causticMesh->tex.push_back((z +2.0f) / 4.0f);
+
+		waterMesh->tex.push_back((z + 2.0f) / 4.0f);
+		waterMesh->tex.push_back((z + 2.0f) / 4.0f);
+		// vec2( (pos.x/4)+2, (pos.z/4)+2 )
 	}
 	causticMesh->calculateNormals();
 	causticMesh->bufferData();
+
+	std::cout << causticMesh->vertices.size() << "\n";
+	std::cout << causticMesh->tex.size() << "\n";
 
 
 	// Main while loop
@@ -565,6 +584,7 @@ int main(int argc, char** argv)
 			waterMesh->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
 			waterMesh->vertices[i + 1] += amplitude / 10 * sin(-PI * dist * frequency * 5 + time * 2) * gold_noise(vec2(10.f), 100);
 		}
+		
 		
 		
 		

@@ -4,11 +4,12 @@
 layout (location = 0) in vec4 position;
 // Colors
 layout (location = 1) in vec3 normal; // This is the normals for the wave mesh
-
+layout (location = 2) in vec2 texcoord;
 
 // Outputs the color for the Fragment Shader
 out vec3 color;
 out vec3 intercept;
+out vec2 tex;
 
 // Imports the camera matrix from the main function
 uniform mat4 camMatrix;
@@ -29,9 +30,13 @@ void main()
 	//float y= samples[gl_VertexID*3 + 1];
 	//float z = samples[gl_VertexID*3 + 2];
 
+	// vec2( (pos.x/4)+2, (pos.z/4)+2 )
+	tex = vec2(texcoord.x, texcoord.y);
 
 	float distance = (0.0f - position.y)/ normal.y;
 	intercept = position.xyz + (distance * normal);
 	//intercept = position.xyz;
 	color = normal;
+
+	
 }
