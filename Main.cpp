@@ -329,74 +329,6 @@ int main(int argc, char** argv)
 	glViewport(0, 0, width, height);
 
 
-	// Generates Shader object using shaders default.vert and default.frag
-	Shader groundShader("ground.vert", "ground.frag");
-
-
-
-	
-
-
-
-	float vertGround[] = {
-		// positions          // colors           // texture coords
-			  2.0f,  -1.5f, 2.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-			  2.0f, -1.5f, -2.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-			 -2.0f, -1.5f, -2.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-			 -2.0f,  -1.5f, 2.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
-	};
-	unsigned int indexGround[] = {
-	   0, 1, 3, // first triangle
-	   1, 2, 3  // second triangle
-	};
-	VAO groundVAO;
-	groundVAO.Bind();
-
-	// Generates Vertex Buffer Object and links it to vertices
-	VBO groundVBO(vertGround, sizeof(vertGround));
-	// Generates Element Buffer Object and links it to indices
-	EBO groundEBO(indexGround, sizeof(indexGround));
-
-	// Links VBO attributes such as coordinates and colors to VAO
-	groundVAO.LinkAttrib(groundVBO, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
-	groundVAO.LinkAttrib(groundVBO, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	groundVAO.LinkAttrib(groundVBO, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	// Unbind all to prevent accidentally modifying them
-	groundVAO.Unbind();
-	groundVBO.Unbind();
-	groundEBO.Unbind();
-
-	unsigned int VBO, VAO, EBO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
-	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-	glBindVertexArray(VAO);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertGround), vertGround, GL_STATIC_DRAW);
-	
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexGround), indexGround, GL_STATIC_DRAW);
-	
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// color attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-	
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-	
-	//// Original code from the tutorial
-	//Texture brickTex("textures/vlziefgfw_2K_Albedo.jpg", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
-	//brickTex.texUnit(groundShader, "tex0", 0);
-
-	Texture brickTex("textures/vlziefgfw_2K_Albedo.jpg", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
-	brickTex.texUnit(groundShader, "tex0", 0);
-
 	//Texture environmentMap("textures/EnvironmentMap.jpg", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
 	//environmentMap.texUnit(fineMeshShader, "tex0", 0);
 	
@@ -415,11 +347,33 @@ int main(int argc, char** argv)
 	int widthI, heightI, nrChannels;
 	//stbi_set
 	//stbi_set_flip_vertically_on_load(true);
-	
+
 	unsigned char* data = stbi_load("./textures/env.png", &widthI, &heightI, &nrChannels, 0);
 	if (data)
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthI, heightI, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
+
+	unsigned int texture2;
+	glGenTextures(1, &texture2);
+	glBindTexture(GL_TEXTURE_2D, texture2);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	
+
+	data = stbi_load("./textures/vlziefgfw_2K_Albedo.jpg", &widthI, &heightI, &nrChannels, 0);
+	if (data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthI, heightI, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else
@@ -459,7 +413,7 @@ int main(int argc, char** argv)
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Tex);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexGround), indexGround, GL_STATIC_DRAW);
 	for (int i = 0; i < causticMesh->vertices.size(); i += 4) {
-		causticMesh->vertices[i + 1] = -1.48f;
+		causticMesh->vertices[i + 1] = -1.5f;
 
 
 		float x = causticMesh->vertices[i];
@@ -492,28 +446,6 @@ int main(int argc, char** argv)
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		//// Binds texture so that is appears in rendering
-		//brickTex.Bind();
-		//// Bind the VAO so OpenGL knows to use it
-		groundVAO.Bind();
-		//// Draw primitives, number of indices, datatype of indices, index of indices
-		//glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(int), GL_UNSIGNED_INT, 0);
-		//// Swap the back buffer with the front buffer
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		groundShader.Activate();
-		brickTex.Bind();
-		//glBindVertexArray(VAO);
-		camera.Matrix(45.0f, 0.1f, 100.0f, groundShader.ID, "camMatrix");
-		////glDrawArrays(GL_TRIANGLES, 0, 3);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		//
-		////simpleDepthShader.use();
-		////simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-		groundVAO.Unbind();
-
-		
-		
-
 
 		// DRAW CAUSTICS SECOND
 		
@@ -529,6 +461,7 @@ int main(int argc, char** argv)
 		glBindVertexArray(myVAO);
 
 		glUniform1i(glGetUniformLocation(causticShader, "texture1"), 0);
+		glUniform1i(glGetUniformLocation(causticShader, "texture2"), 1);
 
 		camera.Inputs(window);
 		// Updates and exports the camera matrix to the Vertex Shader
@@ -549,6 +482,8 @@ int main(int argc, char** argv)
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture2);
 
 		//glUniform1fv(glGetUniformLocation(fineMeshShader, "samples"), 6561, &(file->normals[0]));
 
