@@ -59,10 +59,10 @@
     <None Include="default.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="ground.frag">
+    <None Include="causticMap.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="ground.vert">
+    <None Include="causticMap.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
     <None Include="fineMesh.frag">

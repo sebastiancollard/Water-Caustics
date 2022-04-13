@@ -161,8 +161,8 @@
     <None Include="default.vert" />
     <None Include="fineMesh.frag" />
     <None Include="fineMesh.vert" />
-    <None Include="ground.frag" />
-    <None Include="ground.vert" />
+    <None Include="causticMap.frag" />
+    <None Include="causticMap.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />

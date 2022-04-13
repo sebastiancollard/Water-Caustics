@@ -31,14 +31,18 @@ GLuint myFineMeshVAO;
 
 // Shader program to use
 GLuint waterShader;
-GLuint causticShader;
+GLuint groundShader;
+GLuint causticMapShader;
 
 // Shader filenames
 string waterVSFilename = "default.vert";
 string waterFSFilename = "default.frag";
 
-string causticVSFilename = "fineMesh.vert";
-string causticFSFilename = "fineMesh.frag";
+string groundVSFilename = "fineMesh.vert";
+string groundFSFilename = "fineMesh.frag";
+
+string causticMapVSFilename = "causticMap.vert";
+string causticMapFSFilename = "causticMap.frag";
 
 // ObjFile instance
 ObjFile* waterMesh;
@@ -149,10 +153,13 @@ void setupRenderingContext() {
 	//Now, let's setup the shaders
 	GLuint waterVertexShader = glCreateShader(GL_VERTEX_SHADER);
 	GLuint waterFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	GLuint causticVertexShader = glCreateShader(GL_VERTEX_SHADER);
-	GLuint causticFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	causticShader = (GLuint)NULL;
+	GLuint groundVertexShader = glCreateShader(GL_VERTEX_SHADER);
+	GLuint groundFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	GLuint causticMapVertexShader = glCreateShader(GL_VERTEX_SHADER);
+	GLuint causticMapFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	groundShader = (GLuint)NULL;
 	waterShader = (GLuint)NULL;
+	causticMapShader = (GLuint)NULL;
 	GLint testVal;
 
 	if (!loadShaderFile(waterVSFilename.c_str(), waterVertexShader)) {
@@ -167,22 +174,36 @@ void setupRenderingContext() {
 		cout << "The shader " << waterFSFilename << " could not be found." << endl;
 	}
 
-	if (!loadShaderFile(causticVSFilename.c_str(), causticVertexShader)) {
-		glDeleteShader(causticVertexShader);
-		glDeleteShader(causticFragmentShader);
-		cout << "The shader " << causticVSFilename << " could not be found." << endl;
+	if (!loadShaderFile(groundVSFilename.c_str(), groundVertexShader)) {
+		glDeleteShader(groundVertexShader);
+		glDeleteShader(groundFragmentShader);
+		cout << "The shader " << groundVSFilename << " could not be found." << endl;
 	}
 
-	if (!loadShaderFile(causticFSFilename.c_str(), causticFragmentShader)) {
-		glDeleteShader(causticVertexShader);
-		glDeleteShader(causticFragmentShader);
-		cout << "The shader " << causticFSFilename << " could not be found." << endl;
+	if (!loadShaderFile(groundFSFilename.c_str(), groundFragmentShader)) {
+		glDeleteShader(groundVertexShader);
+		glDeleteShader(groundFragmentShader);
+		cout << "The shader " << groundFSFilename << " could not be found." << endl;
+	}
+
+	if (!loadShaderFile(causticMapVSFilename.c_str(), causticMapVertexShader)) {
+		glDeleteShader(causticMapVertexShader);
+		glDeleteShader(causticMapFragmentShader);
+		cout << "The shader " << causticMapVSFilename << " could not be found." << endl;
+	}
+
+	if (!loadShaderFile(causticMapFSFilename.c_str(), causticMapFragmentShader)) {
+		glDeleteShader(causticMapVertexShader);
+		glDeleteShader(causticMapFragmentShader);
+		cout << "The shader " << causticMapFSFilename << " could not be found." << endl;
 	}
 
 	glCompileShader(waterVertexShader);
 	glCompileShader(waterFragmentShader);
-	glCompileShader(causticVertexShader);
-	glCompileShader(causticFragmentShader);
+	glCompileShader(groundVertexShader);
+	glCompileShader(groundFragmentShader);
+	glCompileShader(causticMapVertexShader);
+	glCompileShader(causticMapFragmentShader);
 
 	// Check for any error generated during shader compilation
 	glGetShaderiv(waterVertexShader, GL_COMPILE_STATUS, &testVal);
@@ -208,27 +229,50 @@ void setupRenderingContext() {
 		glDeleteShader(waterFragmentShader);
 	}
 
-	glGetShaderiv(causticVertexShader, GL_COMPILE_STATUS, &testVal);
+	glGetShaderiv(groundVertexShader, GL_COMPILE_STATUS, &testVal);
 	if (testVal == GL_FALSE) {
 		char source[8192];
 		char infoLog[8192];
-		glGetShaderSource(causticVertexShader, 8192, NULL, source);
-		glGetShaderInfoLog(causticVertexShader, 8192, NULL, infoLog);
+		glGetShaderSource(groundVertexShader, 8192, NULL, source);
+		glGetShaderInfoLog(groundVertexShader, 8192, NULL, infoLog);
 		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
 		fprintf(stderr, "%s\n", infoLog);
-		glDeleteShader(causticVertexShader);
-		glDeleteShader(causticFragmentShader);
+		glDeleteShader(groundVertexShader);
+		glDeleteShader(groundFragmentShader);
 	}
-	glGetShaderiv(causticFragmentShader, GL_COMPILE_STATUS, &testVal);
+	glGetShaderiv(groundFragmentShader, GL_COMPILE_STATUS, &testVal);
 	if (testVal == GL_FALSE) {
 		char source[8192];
 		char infoLog[8192];
-		glGetShaderSource(causticFragmentShader, 8192, NULL, source);
-		glGetShaderInfoLog(causticFragmentShader, 8192, NULL, infoLog);
+		glGetShaderSource(groundFragmentShader, 8192, NULL, source);
+		glGetShaderInfoLog(groundFragmentShader, 8192, NULL, infoLog);
 		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
 		fprintf(stderr, "%s\n", infoLog);
-		glDeleteShader(causticVertexShader);
-		glDeleteShader(causticFragmentShader);
+		glDeleteShader(groundVertexShader);
+		glDeleteShader(groundFragmentShader);
+	}
+
+	glGetShaderiv(causticMapVertexShader, GL_COMPILE_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char source[8192];
+		char infoLog[8192];
+		glGetShaderSource(causticMapVertexShader, 8192, NULL, source);
+		glGetShaderInfoLog(causticMapVertexShader, 8192, NULL, infoLog);
+		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
+		fprintf(stderr, "%s\n", infoLog);
+		glDeleteShader(causticMapVertexShader);
+		glDeleteShader(causticMapFragmentShader);
+	}
+	glGetShaderiv(causticMapFragmentShader, GL_COMPILE_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char source[8192];
+		char infoLog[8192];
+		glGetShaderSource(causticMapFragmentShader, 8192, NULL, source);
+		glGetShaderInfoLog(causticMapFragmentShader, 8192, NULL, infoLog);
+		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
+		fprintf(stderr, "%s\n", infoLog);
+		glDeleteShader(causticMapVertexShader);
+		glDeleteShader(causticMapFragmentShader);
 	}
 
 	// Create the shader program and bind locations for the vertex
@@ -255,25 +299,46 @@ void setupRenderingContext() {
 		waterShader = (GLuint)NULL;
 	}
 
-	causticShader = glCreateProgram();
-	glAttachShader(causticShader, causticVertexShader);
-	glAttachShader(causticShader, causticFragmentShader);
+	groundShader = glCreateProgram();
+	glAttachShader(groundShader, groundVertexShader);
+	glAttachShader(groundShader, groundFragmentShader);
 
-	glBindAttribLocation(causticShader, VERTEX_DATA, "position");
+	glBindAttribLocation(groundShader, VERTEX_DATA, "position");
 	//glBindAttribLocation( myShaderProgram, VERTEX_COLOUR, "vColor" );
-	glBindAttribLocation(causticShader, VERTEX_NORMAL, "normal");
-	glBindAttribLocation(waterShader, 2, "texcoord");
+	glBindAttribLocation(groundShader, VERTEX_NORMAL, "normal");
+	glBindAttribLocation(groundShader, 2, "texcoord");
 
-	glLinkProgram(causticShader);
-	glDeleteShader(causticVertexShader);
-	glDeleteShader(causticFragmentShader);
-	glGetProgramiv(causticShader, GL_LINK_STATUS, &testVal);
+	glLinkProgram(groundShader);
+	glDeleteShader(groundVertexShader);
+	glDeleteShader(groundFragmentShader);
+	glGetProgramiv(groundShader, GL_LINK_STATUS, &testVal);
 	if (testVal == GL_FALSE) {
 		char infoLog[1024];
-		glGetProgramInfoLog(causticShader, 1024, NULL, infoLog);
-		cout << "The shader program (" << causticVSFilename << " + " << causticFSFilename << ") failed to link:" << endl << (const char*)infoLog << endl;
-		glDeleteProgram(causticShader);
-		causticShader = (GLuint)NULL;
+		glGetProgramInfoLog(groundShader, 1024, NULL, infoLog);
+		cout << "The shader program (" << groundVSFilename << " + " << groundFSFilename << ") failed to link:" << endl << (const char*)infoLog << endl;
+		glDeleteProgram(groundShader);
+		groundShader = (GLuint)NULL;
+	}
+
+	causticMapShader = glCreateProgram();
+	glAttachShader(causticMapShader, causticMapVertexShader);
+	glAttachShader(causticMapShader, causticMapFragmentShader);
+
+	glBindAttribLocation(causticMapShader, VERTEX_DATA, "position");
+	//glBindAttribLocation( myShaderProgram, VERTEX_COLOUR, "vColor" );
+	glBindAttribLocation(causticMapShader, VERTEX_NORMAL, "normal");
+	glBindAttribLocation(causticMapShader, 2, "texcoord");
+
+	glLinkProgram(causticMapShader);
+	glDeleteShader(causticMapVertexShader);
+	glDeleteShader(causticMapFragmentShader);
+	glGetProgramiv(causticMapShader, GL_LINK_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char infoLog[1024];
+		glGetProgramInfoLog(causticMapShader, 1024, NULL, infoLog);
+		cout << "The shader program (" << causticMapVSFilename << " + " << causticMapFSFilename << ") failed to link:" << endl << (const char*)infoLog << endl;
+		glDeleteProgram(causticMapShader);
+		causticMapShader = (GLuint)NULL;
 	}
 
 	// Now setup the geometry in a vertex buffer object
@@ -282,6 +347,33 @@ void setupRenderingContext() {
 	// be bound to it.
 	glGenVertexArrays(1, &myVAO);
 	glBindVertexArray(myVAO);
+
+	// configure g-buffer framebuffer
+	// ------------------------------
+	unsigned int gBuffer;
+	glGenFramebuffers(1, &gBuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+	unsigned int gCaustic;
+	// position color buffer
+	glGenTextures(1, &gCaustic);
+	glBindTexture(GL_TEXTURE_2D, gCaustic);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gCaustic, 0);
+	// tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
+	unsigned int attachments[1] = { GL_COLOR_ATTACHMENT0 };
+	glDrawBuffers(1, attachments);
+	// create and attach depth buffer (renderbuffer)
+	unsigned int rboDepth;
+	glGenRenderbuffers(1, &rboDepth);
+	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+	// finally check if framebuffer is complete
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Framebuffer not complete!" << std::endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 
@@ -442,6 +534,11 @@ int main(int argc, char** argv)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
+		// 1. geometry pass: render scene's geometry/color data into gbuffer
+		// -----------------------------------------------------------------
+		
+
+
 		// DRAW GROUND FIRST
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -455,17 +552,26 @@ int main(int argc, char** argv)
 		
 		causticMesh->bufferData();
 
+		//glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+		//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		//
+		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
-		glUseProgram(causticShader);
+
+
+
+
+
+		glUseProgram(groundShader);
 		glBindVertexArray(myVAO);
 
-		glUniform1i(glGetUniformLocation(causticShader, "texture1"), 0);
-		glUniform1i(glGetUniformLocation(causticShader, "texture2"), 1);
+		glUniform1i(glGetUniformLocation(groundShader, "texture1"), 0);
+		glUniform1i(glGetUniformLocation(groundShader, "texture2"), 1);
 
 		camera.Inputs(window);
 		// Updates and exports the camera matrix to the Vertex Shader
-		camera.Matrix(45.0f, 0.1f, 100.0f, causticShader, "camMatrix");
+		camera.Matrix(45.0f, 0.1f, 100.0f, groundShader, "camMatrix");
 
 		//Scale based on input
 		scaling = scale(mat4(1.0f), vec3(scalar)) * scaling;
@@ -474,11 +580,11 @@ int main(int argc, char** argv)
 		mat4 modelView = lookAt(vec3(0.0f, 0.0f, -10.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
 		modelView = rot * scaling * translation;
 		mat4 model = rot * scaling * translation;
-		glUniformMatrix4fv(glGetUniformLocation(causticShader, "model"), 1, GL_FALSE, value_ptr(model));
+		glUniformMatrix4fv(glGetUniformLocation(groundShader, "model"), 1, GL_FALSE, value_ptr(model));
 
 		//Create and pass projection matrix
 		mat4 proj = perspective(45.0f, (float)width / (float)height, 0.1f, 100.0f);
-		glUniformMatrix4fv(glGetUniformLocation(causticShader, "proj_matrix"), 1, GL_FALSE, value_ptr(proj));
+		glUniformMatrix4fv(glGetUniformLocation(groundShader, "proj_matrix"), 1, GL_FALSE, value_ptr(proj));
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1);
