@@ -33,6 +33,7 @@ GLuint myFineMeshVAO;
 GLuint waterShader;
 GLuint groundShader;
 GLuint causticMapShader;
+GLuint causticMapBlurShader;
 
 // Shader filenames
 string waterVSFilename = "default.vert";
@@ -43,6 +44,9 @@ string groundFSFilename = "fineMesh.frag";
 
 string causticMapVSFilename = "causticMap.vert";
 string causticMapFSFilename = "causticMap.frag";
+
+string causticMapBlurVSFilename = "causticMapBlur.vert";
+string causticMapBlurFSFilename = "causticMapBlur.frag";
 
 // ObjFile instance
 ObjFile* waterMesh;
@@ -70,9 +74,10 @@ float gold_noise(vec2 xy, float seed) {
 // Constants to help with location bindings
 #define VERTEX_DATA 0
 #define VERTEX_NORMAL 1
-
+#define CAUSTIC_BLUR_INENSITY 4
 const unsigned int width = 1920;
 const unsigned int height = 1080;
+unsigned int gBuffer, gBufferBlur, gCaustic, gCausticBlurred;
 
 
 ////////////////////////////////////////////////////////////////
@@ -157,9 +162,12 @@ void setupRenderingContext() {
 	GLuint groundFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 	GLuint causticMapVertexShader = glCreateShader(GL_VERTEX_SHADER);
 	GLuint causticMapFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	GLuint causticMapBlurVertexShader = glCreateShader(GL_VERTEX_SHADER);
+	GLuint causticMapBlurFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 	groundShader = (GLuint)NULL;
 	waterShader = (GLuint)NULL;
 	causticMapShader = (GLuint)NULL;
+	causticMapBlurShader = (GLuint)NULL;
 	GLint testVal;
 
 	if (!loadShaderFile(waterVSFilename.c_str(), waterVertexShader)) {
@@ -198,12 +206,26 @@ void setupRenderingContext() {
 		cout << "The shader " << causticMapFSFilename << " could not be found." << endl;
 	}
 
+	if (!loadShaderFile(causticMapBlurVSFilename.c_str(), causticMapBlurVertexShader)) {
+		glDeleteShader(causticMapBlurVertexShader);
+		glDeleteShader(causticMapBlurFragmentShader);
+		cout << "The shader " << causticMapBlurVSFilename << " could not be found." << endl;
+	}
+
+	if (!loadShaderFile(causticMapBlurFSFilename.c_str(), causticMapBlurFragmentShader)) {
+		glDeleteShader(causticMapBlurVertexShader);
+		glDeleteShader(causticMapBlurFragmentShader);
+		cout << "The shader " << causticMapBlurFSFilename << " could not be found." << endl;
+	}
+
 	glCompileShader(waterVertexShader);
 	glCompileShader(waterFragmentShader);
 	glCompileShader(groundVertexShader);
 	glCompileShader(groundFragmentShader);
 	glCompileShader(causticMapVertexShader);
 	glCompileShader(causticMapFragmentShader);
+	glCompileShader(causticMapBlurVertexShader);
+	glCompileShader(causticMapBlurFragmentShader);
 
 	// Check for any error generated during shader compilation
 	glGetShaderiv(waterVertexShader, GL_COMPILE_STATUS, &testVal);
@@ -275,6 +297,29 @@ void setupRenderingContext() {
 		glDeleteShader(causticMapFragmentShader);
 	}
 
+	glGetShaderiv(causticMapBlurVertexShader, GL_COMPILE_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char source[8192];
+		char infoLog[8192];
+		glGetShaderSource(causticMapBlurVertexShader, 8192, NULL, source);
+		glGetShaderInfoLog(causticMapBlurVertexShader, 8192, NULL, infoLog);
+		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
+		fprintf(stderr, "%s\n", infoLog);
+		glDeleteShader(causticMapBlurVertexShader);
+		glDeleteShader(causticMapBlurFragmentShader);
+	}
+	glGetShaderiv(causticMapBlurFragmentShader, GL_COMPILE_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char source[8192];
+		char infoLog[8192];
+		glGetShaderSource(causticMapBlurFragmentShader, 8192, NULL, source);
+		glGetShaderInfoLog(causticMapBlurFragmentShader, 8192, NULL, infoLog);
+		cout << "The shader: " << endl << (const char*)source << endl << " failed to compile:" << endl;
+		fprintf(stderr, "%s\n", infoLog);
+		glDeleteShader(causticMapBlurVertexShader);
+		glDeleteShader(causticMapBlurFragmentShader);
+	}
+
 	// Create the shader program and bind locations for the vertex
 	// attributes before linking. The linking process can also generate errors
 
@@ -327,7 +372,6 @@ void setupRenderingContext() {
 	glBindAttribLocation(causticMapShader, VERTEX_DATA, "position");
 	//glBindAttribLocation( myShaderProgram, VERTEX_COLOUR, "vColor" );
 	glBindAttribLocation(causticMapShader, VERTEX_NORMAL, "normal");
-	glBindAttribLocation(causticMapShader, 2, "texcoord");
 
 	glLinkProgram(causticMapShader);
 	glDeleteShader(causticMapVertexShader);
@@ -341,6 +385,26 @@ void setupRenderingContext() {
 		causticMapShader = (GLuint)NULL;
 	}
 
+	causticMapBlurShader = glCreateProgram();
+	glAttachShader(causticMapBlurShader, causticMapBlurVertexShader);
+	glAttachShader(causticMapBlurShader, causticMapBlurFragmentShader);
+
+	glBindAttribLocation(causticMapBlurShader, VERTEX_DATA, "position");
+	//glBindAttribLocation( myShaderProgram, VERTEX_COLOUR, "vColor" );
+	glBindAttribLocation(causticMapBlurShader, VERTEX_NORMAL, "normal");
+
+	glLinkProgram(causticMapBlurShader);
+	glDeleteShader(causticMapBlurVertexShader);
+	glDeleteShader(causticMapBlurFragmentShader);
+	glGetProgramiv(causticMapBlurShader, GL_LINK_STATUS, &testVal);
+	if (testVal == GL_FALSE) {
+		char infoLog[1024];
+		glGetProgramInfoLog(causticMapBlurShader, 1024, NULL, infoLog);
+		cout << "The shader program (" << causticMapBlurVSFilename << " + " << causticMapBlurFSFilename << ") failed to link:" << endl << (const char*)infoLog << endl;
+		glDeleteProgram(causticMapBlurShader);
+		causticMapBlurShader = (GLuint)NULL;
+	}
+
 	// Now setup the geometry in a vertex buffer object
 
 	// setup the vertex state array object. All subsequent buffers will
@@ -350,29 +414,28 @@ void setupRenderingContext() {
 
 	// configure g-buffer framebuffer
 	// ------------------------------
-	unsigned int gBuffer;
 	glGenFramebuffers(1, &gBuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
-	unsigned int gCaustic;
-	// position color buffer
 	glGenTextures(1, &gCaustic);
 	glBindTexture(GL_TEXTURE_2D, gCaustic);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gCaustic, 0);
-	// tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
-	unsigned int attachments[1] = { GL_COLOR_ATTACHMENT0 };
-	glDrawBuffers(1, attachments);
-	// create and attach depth buffer (renderbuffer)
-	unsigned int rboDepth;
-	glGenRenderbuffers(1, &rboDepth);
-	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
-	// finally check if framebuffer is complete
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "Framebuffer not complete!" << std::endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glGenFramebuffers(1, &gBufferBlur);
+	glBindFramebuffer(GL_FRAMEBUFFER, gBufferBlur);
+	glGenTextures(1, &gCausticBlurred);
+	glBindTexture(GL_TEXTURE_2D, gCausticBlurred);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gCausticBlurred, 0);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "caustic Blur Framebuffer not complete!" << std::endl;
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -473,7 +536,8 @@ int main(int argc, char** argv)
 		std::cout << "Failed to load texture" << std::endl;
 	}
 	stbi_image_free(data);
-	
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	
 
 
@@ -489,16 +553,16 @@ int main(int argc, char** argv)
 	glGenBuffers(1, &waterMesh->vertexBuffer);
 	glGenBuffers(1, &waterMesh->indexBuffer);
 	waterMesh->bufferData();
-	scaling = waterMesh->getFitScale();
-	translation = waterMesh->getFitTranslate();
+	//scaling = waterMesh->getFitScale();
+	//translation = waterMesh->getFitTranslate();
 	
 	//setupRenderingContextFineMesh();
 	causticMesh->calculateNormals();
 	glGenBuffers(1, &causticMesh->vertexBuffer);
 	glGenBuffers(1, &causticMesh->indexBuffer);
 	causticMesh->bufferData();
-	scaling = causticMesh->getFitScale();
-	translation = causticMesh->getFitTranslate();
+	//scaling = causticMesh->getFitScale();
+	//translation = causticMesh->getFitTranslate();
 
 	//unsigned int Tex;
 	//glGenBuffers(1, &Tex);
@@ -562,17 +626,7 @@ int main(int argc, char** argv)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-		// 1. geometry pass: render scene's geometry/color data into gbuffer
-		// -----------------------------------------------------------------
 		
-
-
-		// DRAW GROUND FIRST
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-
-		// DRAW CAUSTICS SECOND
 		
 		for (int i = 0; i < waterMesh->normals.size(); i++) {
 			causticMesh->normals[i] = waterMesh->normals[i];
@@ -580,34 +634,79 @@ int main(int argc, char** argv)
 		
 		causticMesh->bufferData();
 
-		//glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
-		//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		//
-		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		// disable blending for framebuffer stuff
+		glDisable(GL_BLEND);
+		
+		// first framebuffer: caustic map
+		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glUseProgram(causticMapShader);
+			glBindVertexArray(myVAO);
+		
+			glUniform1i(glGetUniformLocation(causticMapShader, "texture1"), 0);
+		
+			scaling = scale(mat4(1.0f), vec3(0.50));
+			rot = rotate(mat4(1.f), glm::radians(90.f), glm::vec3(1, 0, 0));
+			mat4 model = rot * scaling * translation;
+			glUniformMatrix4fv(glGetUniformLocation(causticMapShader, "model"), 1, GL_FALSE, value_ptr(model));
+		
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, texture1);
+		
+			causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+		
+			glBindVertexArray(0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		// second framebuffer: caustic map blurred
+		glBindFramebuffer(GL_FRAMEBUFFER, gBufferBlur);
+			glClear(GL_COLOR_BUFFER_BIT);
+			glUseProgram(causticMapBlurShader);
+			glBindVertexArray(myVAO);
+		
+			glUniform1i(glGetUniformLocation(causticMapBlurShader, "gCaustic"), 0);
+			glUniform1i(glGetUniformLocation(causticMapBlurShader, "blurIntensity"), CAUSTIC_BLUR_INENSITY);
+			model = rot * scaling * translation;
+			glUniformMatrix4fv(glGetUniformLocation(causticMapBlurShader, "model"), 1, GL_FALSE, value_ptr(model));
+		
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, gCaustic);
+		
+			causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+		
+			glBindVertexArray(0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
 
 
 
+		// now we can enable blending 
+		glEnable(GL_BLEND);
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 
-
+		
+		//glClear(GL_COLOR_BUFFER_BIT);
 		glUseProgram(groundShader);
 		glBindVertexArray(myVAO);
 
+		// env map, sand texture and caustic texture
 		glUniform1i(glGetUniformLocation(groundShader, "texture1"), 0);
 		glUniform1i(glGetUniformLocation(groundShader, "texture2"), 1);
+		glUniform1i(glGetUniformLocation(groundShader, "gCausticBlurred"), 2);
 
 		camera.Inputs(window);
 		// Updates and exports the camera matrix to the Vertex Shader
 		camera.Matrix(45.0f, 0.1f, 100.0f, groundShader, "camMatrix");
 
 		//Scale based on input
-		scaling = scale(mat4(1.0f), vec3(scalar)) * scaling;
+		scaling = mat4(1.f);
+		rot = mat4(1.f);
 
 		//Create and pass model view matrix
 		mat4 modelView = lookAt(vec3(0.0f, 0.0f, -10.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
 		modelView = rot * scaling * translation;
-		mat4 model = rot * scaling * translation;
+		model = rot * scaling * translation;
 		glUniformMatrix4fv(glGetUniformLocation(groundShader, "model"), 1, GL_FALSE, value_ptr(model));
 
 		//Create and pass projection matrix
@@ -618,6 +717,8 @@ int main(int argc, char** argv)
 		glBindTexture(GL_TEXTURE_2D, texture1);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, gCausticBlurred);
 
 		//glUniform1fv(glGetUniformLocation(fineMeshShader, "samples"), 6561, &(file->normals[0]));
 
@@ -631,7 +732,7 @@ int main(int argc, char** argv)
 		glBindVertexArray(0);
 		
 
-
+		
 
 		// DRAW WAVE LAST, FOR BLENDING/TRANSPARENCY
 
