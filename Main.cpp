@@ -517,11 +517,39 @@ int main(int argc, char** argv)
 		waterMesh->tex.push_back((z + 2.0f) / 4.0f);
 		// vec2( (pos.x/4)+2, (pos.z/4)+2 )
 	}
+	//std::cout << causticMesh->vertices.size() << "\n";
+	//std::cout << waterMesh->vertices.size() << "\n";
+
+
+	// https://stackoverflow.com/questions/481144/equation-for-testing-if-a-point-is-inside-a-circle
+	float radiusCheck = 0.1f;
+
+	for (int i = 0; i < causticMesh->vertices.size(); i += 4) {
+		float xCenter = causticMesh->vertices[i];
+		float zCenter = causticMesh->vertices[i + 2];
+		for (int j = 0; j < waterMesh->vertices.size(); j += 4) {
+			if (j != i) {
+				float x = waterMesh->vertices[j];
+				float z = waterMesh->vertices[j + 2];
+
+				float xIn = (x - xCenter) * (x - xCenter);
+				float zIn = (z - zCenter) * (z - zCenter);
+
+				if (xIn + zIn < (radiusCheck * radiusCheck)) {
+					causticMesh->closeVertex.push_back(x);
+					causticMesh->closeVertex.push_back(waterMesh->vertices[j+1]);
+					causticMesh->closeVertex.push_back(z);
+				}
+			}
+		}
+	}
+	std::cout << causticMesh->closeVertex.size(); "\n";
+
 	causticMesh->calculateNormals();
 	causticMesh->bufferData();
 
-	std::cout << causticMesh->vertices.size() << "\n";
-	std::cout << causticMesh->tex.size() << "\n";
+	//std::cout << causticMesh->vertices.size() << "\n";
+	//std::cout << causticMesh->tex.size() << "\n";
 
 
 	// Main while loop

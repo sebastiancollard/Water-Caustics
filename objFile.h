@@ -37,6 +37,7 @@ public:
 	vector<GLfloat> vertices, normals;
 	vector<GLuint> indices;
 	vector<GLfloat> tex;
+	vector<GLfloat> closeVertex;
 
 	vec3 max, min;
 protected:
