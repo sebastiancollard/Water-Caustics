@@ -157,6 +157,8 @@
     <ClCompile Include="VBO.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="causticMapBlur.frag" />
+    <None Include="causticMapBlur.vert" />
     <None Include="default.frag" />
     <None Include="default.vert" />
     <None Include="fineMesh.frag" />
