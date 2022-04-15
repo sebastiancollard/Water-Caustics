@@ -12,6 +12,13 @@ in vec2 tex;
 uniform sampler2D texture1;
 uniform sampler2D texture2;
 uniform sampler2D gCausticBlurred;
+uniform sampler2D gp;
+
+//uniform sampler2D gp;
+//uniform sampler2D gpp;
+//uniform sampler2D texture1;
+//uniform sampler2D texture2;
+//uniform sampler2D gCausticBlurred;
 
 
 void main()
@@ -39,4 +46,8 @@ void main()
 	res = min(res, texture(texture2,tex).rgb * 1.4) + waterColor * 0.3f;
 
 	FragColor = vec4(res,1.0f);
+
+//	FragColor = texelFetch(texture3,1,0);
+//	FragColor = vec4(texture(gp,tex).rgb,1.0);
+//	FragColor = vec4(color,1.0);
 }
