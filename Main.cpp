@@ -6,16 +6,15 @@
 #include<iostream>
 #include "objFile.h"
 
-#include "givio.h"
-#include "givr.h"
-#include "panel.h"
-
 #include<GLFW/glfw3.h>
 #include<stb/stb_image.h>
 #include<glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
 
+#include"imgui/imgui.h"
+#include"imgui/imgui_impl_glfw.h"
+#include"imgui/imgui_impl_opengl3.h"
 
 #include"Texture.h"
 #include"shaderClass.h"
@@ -27,6 +26,8 @@
 
 using namespace std;
 using namespace glm;
+
+
 
 void renderQuad();
 
@@ -61,6 +62,7 @@ string waterMapFSFilename = "waterMap.frag";
 ObjFile* waterMesh;
 ObjFile* causticMesh;
 
+float sizes = 0.2f;
 
 
 // Transformation matrices
@@ -70,8 +72,8 @@ mat4 translation = mat4(1.0f);
 float scalar = 1.0f;
 
 //shader constants
-const float amplitude = 0.06125;
-const float frequency = 4;
+float amplitude = 0.06125;
+float frequency = 4;
 //const float amplitude = 0.2;
 //const float frequency = 2;
 const float PI = 3.14159;
@@ -805,11 +807,23 @@ int main(int argc, char** argv)
 			.matchPrimaryMonitorVideoMode();
 			*/
 			
+	//giv::io::ImGuiBeginFrame();
 	//panel::showPanel = true;
 
 	// Main while loop
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui::StyleColorsDark();
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 330");
+
+
+
+
 	while (!glfwWindowShouldClose(window))
 	{
+
 
 
 
@@ -817,6 +831,10 @@ int main(int argc, char** argv)
 		glClearColor(51.f / 255.f, 71.f / 255.f, 79.f / 255.f, 1.0f);
 		// Clean the back buffer and depth buffer
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
 
 
 
@@ -944,8 +962,9 @@ int main(int argc, char** argv)
 		//glUniform1i(glGetUniformLocation(groundShader, "gCausticBlurred"), 4);
 
 
-
-		camera.Inputs(window);
+		if (!io.WantCaptureMouse) {
+			camera.Inputs(window);
+		}
 		// Updates and exports the camera matrix to the Vertex Shader
 		camera.Matrix(45.0f, 0.1f, 100.0f, groundShader, "camMatrix");
 
@@ -1033,7 +1052,10 @@ int main(int argc, char** argv)
 		waterMesh->calculateNormals();
 		waterMesh->bufferData(waterMesh->normals);
 		// Handles camera inputs
-		camera.Inputs(window);
+
+		if (!io.WantCaptureMouse) {
+			camera.Inputs(window);
+		}
 		// Updates and exports the camera matrix to the Vertex Shader
 		camera.Matrix(45.0f, 0.1f, 100.0f, waterShader, "camMatrix");
 		glUniform3fv(glGetUniformLocation(waterShader, "viewPos"), 1, &camera.Position[0]);
@@ -1042,6 +1064,14 @@ int main(int argc, char** argv)
 		renderScene();
 		glBindVertexArray(0);
 		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+		ImGui::Begin("SandBox!");
+		ImGui::SliderFloat("Wave Amplitude", &amplitude, 0.01f, 0.4f);
+		ImGui::SliderFloat("Frequency", &frequency, 0.f, 8.f);
+		ImGui::End();
+
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		glfwSwapBuffers(window);
 		// Take care of all GLFW events
@@ -1054,7 +1084,9 @@ int main(int argc, char** argv)
 		//std::cout << "Vertices1: " << fineFile->vertices.size() << "\n";
 	}
 
-
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 
 	// Delete all the objects we've created
 	//brickTex.Delete();
