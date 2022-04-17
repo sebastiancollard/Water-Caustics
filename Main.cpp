@@ -78,7 +78,7 @@ float gold_noise(vec2 xy, float seed) {
 // Constants to help with location bindings
 #define VERTEX_DATA 0
 #define VERTEX_NORMAL 1
-#define CAUSTIC_BLUR_INENSITY 0
+#define CAUSTIC_BLUR_INENSITY 2
 const unsigned int width = 1920;
 const unsigned int height = 1080;
 unsigned int gBuffer, gBufferBlur, gCaustic, gCausticBlurred;
@@ -726,6 +726,8 @@ int main(int argc, char** argv)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);	// set texture wrapping to GL_REPEAT (default wrapping method)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
 	unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 	glDrawBuffers(2, attachments);
