@@ -14,7 +14,8 @@ uniform sampler2D gNormal;
 uniform int sampleSteps;
 uniform int sunDistance;
 uniform float baseIntensity;
-  
+uniform float groundOffset;
+
 void main()
 {
     vec2 tex = abs(TexCoords);
@@ -50,7 +51,7 @@ void main()
             // the starting wave plane is 1.5 units above the ground,
             // this only approximates the vector as it does not account
             // for the added height variation of the wave equation.
-            vec3 dir3D = normalize(vec3(dir2D.x, 1.5, dir2D.y));
+            vec3 dir3D = normalize(vec3(dir2D.x, groundOffset, dir2D.y));
 
             // get sample normal from texture
             vec3 normTex = normalize(texture(gNormal, vec2(x, y)).rgb);

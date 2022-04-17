@@ -87,6 +87,8 @@ float gold_noise(vec2 xy, float seed) {
 #define VERTEX_DATA 0
 #define VERTEX_NORMAL 1
 
+float groundOffset = 1.5f;
+
 unsigned int blurIntensity = 2;
 unsigned int sampleSteps = 4;
 unsigned int sunDistance = 1024;
@@ -667,7 +669,7 @@ int main(int argc, char** argv)
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Tex);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexGround), indexGround, GL_STATIC_DRAW);
 	for (int i = 0; i < causticMesh->vertices.size(); i += 4) {
-		causticMesh->vertices[i + 1] = -1.5f;
+		causticMesh->vertices[i + 1] = -groundOffset;
 
 
 		float x = causticMesh->vertices[i];
@@ -862,6 +864,7 @@ int main(int argc, char** argv)
 
 			scaling = scale(mat4(1.0f), vec3(0.50));
 			rot = rotate(mat4(1.f), glm::radians(90.f), glm::vec3(1, 0, 0));
+			translation = translate(mat4(1.f), glm::vec3(0, groundOffset, 0));
 			mat4 model = rot * scaling * translation;
 			glUniformMatrix4fv(glGetUniformLocation(waterMapShader, "model"), 1, GL_FALSE, value_ptr(model));
 
@@ -884,12 +887,12 @@ int main(int argc, char** argv)
 			glUniform1i(glGetUniformLocation(causticMapShader, "texture1"), 0);
 			glUniform1i(glGetUniformLocation(causticMapShader, "gNormal"), 1);
 		
+			glUniform1f(glGetUniformLocation(causticMapShader, "groundOffset"), groundOffset);
+
 			glUniform1i(glGetUniformLocation(causticMapShader, "sampleSteps"), sampleSteps);
 			glUniform1i(glGetUniformLocation(causticMapShader, "sunDistance"), sunDistance);
 			glUniform1f(glGetUniformLocation(causticMapShader, "baseIntensity"), baseIntensity);
 
-			scaling = scale(mat4(1.0f), vec3(0.50));
-			rot = rotate(mat4(1.f), glm::radians(90.f), glm::vec3(1, 0, 0));
 			model = rot * scaling * translation;
 			glUniformMatrix4fv(glGetUniformLocation(causticMapShader, "model"), 1, GL_FALSE, value_ptr(model));
 		
@@ -963,6 +966,7 @@ int main(int argc, char** argv)
 		//Scale based on input
 		scaling = mat4(1.f);
 		rot = mat4(1.f);
+		translation = mat4(1.f);
 
 		//Create and pass model view matrix
 		mat4 modelView = lookAt(vec3(0.0f, 0.0f, -10.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
