@@ -146,13 +146,13 @@ void ObjFile::calculateNormals() {
 	}
 }
 
-void ObjFile::bufferData() {
+void ObjFile::bufferData(vector<GLfloat> &norms) {
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
 
 
 	glBufferData(GL_ARRAY_BUFFER,
-		sizeof(GLfloat) * vertices.size() + sizeof(GLfloat) * normals.size() + sizeof(GLfloat) *tex.size(),
+		sizeof(GLfloat) * vertices.size() + sizeof(GLfloat) * norms.size() + sizeof(GLfloat) *tex.size(),
 		NULL,
 		GL_STATIC_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER,
@@ -161,10 +161,10 @@ void ObjFile::bufferData() {
 		vertices.data());
 	glBufferSubData(GL_ARRAY_BUFFER,
 		sizeof(GLfloat) * vertices.size(),
-		sizeof(GLfloat) * normals.size(),
-		normals.data());
+		sizeof(GLfloat) * norms.size(),
+		norms.data());
 	glBufferSubData(GL_ARRAY_BUFFER,
-		sizeof(GLfloat) * vertices.size() + sizeof(GLfloat) * normals.size(),
+		sizeof(GLfloat) * vertices.size() + sizeof(GLfloat) * norms.size(),
 		sizeof(GLfloat) * tex.size(),
 		tex.data());
 

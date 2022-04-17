@@ -21,7 +21,7 @@ public:
 	ObjFile(char* filename);
 
 	void calculateNormals();
-	void bufferData();
+	void bufferData(vector<GLfloat> &norms);
 	void draw(GLuint vertexLocation, GLuint normalLocation);
 
 	int numVertices();

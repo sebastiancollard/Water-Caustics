@@ -619,7 +619,7 @@ int main(int argc, char** argv)
 	waterMesh->calculateNormals();
 	glGenBuffers(1, &waterMesh->vertexBuffer);
 	glGenBuffers(1, &waterMesh->indexBuffer);
-	waterMesh->bufferData();
+	waterMesh->bufferData(waterMesh->normals);
 	//scaling = waterMesh->getFitScale();
 	//translation = waterMesh->getFitTranslate();
 	
@@ -627,7 +627,7 @@ int main(int argc, char** argv)
 	causticMesh->calculateNormals();
 	glGenBuffers(1, &causticMesh->vertexBuffer);
 	glGenBuffers(1, &causticMesh->indexBuffer);
-	causticMesh->bufferData();
+	causticMesh->bufferData(causticMesh->normals);
 	//scaling = causticMesh->getFitScale();
 	//translation = causticMesh->getFitTranslate();
 
@@ -690,8 +690,7 @@ int main(int argc, char** argv)
 	
 	//std::cout << causticMesh->closeVertex.size()<< "\n";
 
-	causticMesh->calculateNormals();
-	causticMesh->bufferData();
+
 
 
 	/*
@@ -779,16 +778,17 @@ int main(int argc, char** argv)
 
 		
 		
-		for (int i = 0; i < waterMesh->normals.size(); i++) {
-			causticMesh->normals[i] = waterMesh->normals[i];
-		}
+//		for (int i = 0; i < waterMesh->normals.size(); i++) {
+//			causticMesh->normals[i] = waterMesh->normals[i];
+//		}
 		
-		causticMesh->bufferData();
+		causticMesh->bufferData(waterMesh->normals);
 
 		// disable blending for framebuffer stuff
 		glDisable(GL_BLEND);
 
 		// FrameBuffer geomtry of water mesh:
+		
 		glBindFramebuffer(GL_FRAMEBUFFER, gBufferWater);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glUseProgram(waterMapShader);
@@ -804,6 +804,7 @@ int main(int argc, char** argv)
 			
 			glBindVertexArray(0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		
 
 		//waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
 		
@@ -950,11 +951,13 @@ int main(int argc, char** argv)
 		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
 		float time = glfwGetTime();
 		
+		
 		for (int i = 0; i < waterMesh->vertices.size(); i += 4) {
 			float x = waterMesh->vertices[i];
 			float z = waterMesh->vertices[i + 2];
 			float dist = glm::length(glm::vec3(x, 0, z));
-			//waterMesh->vertices[i + 1] = 0;
+
+			waterMesh->vertices[i + 1] = 0;
 			waterMesh->vertices[i + 1] = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time * 2)+1)/2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4) * gold_noise(vec2(10.f), 12);
 			waterMesh->vertices[i + 1] += amplitude * sin(-PI * x * z * frequency / 8 + time * 2);
 			waterMesh->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
@@ -963,9 +966,10 @@ int main(int argc, char** argv)
 		
 		
 		
+
 		
 		waterMesh->calculateNormals();
-		waterMesh->bufferData();
+		waterMesh->bufferData(waterMesh->normals);
 		// Handles camera inputs
 		camera.Inputs(window);
 		// Updates and exports the camera matrix to the Vertex Shader
