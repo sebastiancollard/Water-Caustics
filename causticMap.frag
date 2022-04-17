@@ -45,7 +45,7 @@ void main()
     for (float x = startX; x <= endX; x+=incrementX) {
         for (float y = startY; y <= endY; y+=incrementY) {
             // calculate 2d direction of the current sample relative to the current frag position
-            vec2 dir2D = normalize(tex+vec2(x, y));
+            vec2 dir2D = normalize(vec2(x, y)-tex);
 
             // the starting wave plane is 1.5 units above the ground,
             // this only approximates the vector as it does not account
