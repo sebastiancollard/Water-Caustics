@@ -956,12 +956,14 @@ int main(int argc, char** argv)
 			float x = waterMesh->vertices[i];
 			float z = waterMesh->vertices[i + 2];
 			float dist = glm::length(glm::vec3(x, 0, z));
-
-			waterMesh->vertices[i + 1] = 0;
-			waterMesh->vertices[i + 1] = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time * 2)+1)/2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4) * gold_noise(vec2(10.f), 12);
-			waterMesh->vertices[i + 1] += amplitude * sin(-PI * x * z * frequency / 8 + time * 2);
-			waterMesh->vertices[i + 1] += amplitude * sin(-PI * x * frequency / 16 + time * 2);
-			waterMesh->vertices[i + 1] += amplitude / 10 * sin(-PI * dist * frequency * 5 + time * 2) * gold_noise(vec2(10.f), 100);
+			//waterMesh->vertices[i + 1] = 0;
+			GLfloat temp;
+			float time2 = time * 2;
+			temp = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time2)+1)/2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
+			temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
+			temp += amplitude * sin(-PI * x * frequency / 16 + time2);
+			temp += amplitude / 10 * sin(-PI * dist * frequency * 5 + time2);
+			waterMesh->vertices[i + 1] = temp;
 		}
 		
 		
