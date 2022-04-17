@@ -6,11 +6,16 @@
 #include<iostream>
 #include "objFile.h"
 
+#include "givio.h"
+#include "givr.h"
+#include "panel.h"
+
 #include<GLFW/glfw3.h>
 #include<stb/stb_image.h>
 #include<glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
+
 
 #include"Texture.h"
 #include"shaderClass.h"
@@ -55,6 +60,8 @@ string waterMapFSFilename = "waterMap.frag";
 // ObjFile instance
 ObjFile* waterMesh;
 ObjFile* causticMesh;
+
+
 
 // Transformation matrices
 mat4 rot = mat4(1.0f);
@@ -509,6 +516,11 @@ void setupRenderingContext() {
 
 int main(int argc, char** argv)
 {
+	//												//
+	// TEST I believe there are some LINKER ISSUES //
+	//											   //
+
+
 	if (argc != 2) {
 		cout << "Usage: " << argv[0] << " filename\n";
 		exit(EXIT_FAILURE);
@@ -549,6 +561,19 @@ int main(int argc, char** argv)
 	// Specify the viewport of OpenGL in the Window
 	// In this case the viewport goes from x = 0, y = 0, to x = 800, y = 800
 	glViewport(0, 0, width, height);
+
+	/*
+	namespace givio = giv::io; // perhaps better than giv::io
+	givio::GLFWContext glContext;
+	glContext.glMajorVesion(4)
+		.glMinorVesion(0)
+		.glForwardComaptability(true)
+		.glCoreProfile()
+		.glAntiAliasingSamples(4)
+		.matchPrimaryMonitorVideoMode();
+
+	std::cout << givio::glfwVersionString() << '\n';
+	*/
 
 
 	//Texture environmentMap("textures/EnvironmentMap.jpg", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
@@ -748,10 +773,45 @@ int main(int argc, char** argv)
 	double timeDiff;
 	unsigned int counter = 0;
 
+	
+
+	// 
+	// 
+	// FILES ADDED:
+	/*	givio.cpp
+	*	givio.h
+	*	givr.cpp
+	*	givr.h
+	*	panel.cpp
+	*	panel.h
+	*	picking_controls.cpp
+	*	picking_controls.h
+	*	picking_controls.h.autosave
+	*	turntable_controls.h
+	* 
+	*	imgui
+	*	imgui_bckup
+	* 
+	*/
+	
+	/*
+		namespace givio = giv::io; // perhaps better than giv::io
+		givio::GLFWContext glContext;
+		glContext.glMajorVesion(4)
+			.glMinorVesion(0)
+			.glForwardComaptability(true)
+			.glCoreProfile()
+			.glAntiAliasingSamples(4)
+			.matchPrimaryMonitorVideoMode();
+			*/
+			
+	//panel::showPanel = true;
 
 	// Main while loop
 	while (!glfwWindowShouldClose(window))
 	{
+
+
 
 		// Specify the color of the background
 		glClearColor(51.f / 255.f, 71.f / 255.f, 79.f / 255.f, 1.0f);
