@@ -165,6 +165,8 @@
     <None Include="fineMesh.vert" />
     <None Include="causticMap.frag" />
     <None Include="causticMap.vert" />
+    <None Include="waterMap.frag" />
+    <None Include="waterMap.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />

@@ -77,6 +77,12 @@
     <None Include="causticMapBlur.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
+    <None Include="waterMap.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="waterMap.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">

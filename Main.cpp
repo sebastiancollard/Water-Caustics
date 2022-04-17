@@ -78,7 +78,7 @@ float gold_noise(vec2 xy, float seed) {
 // Constants to help with location bindings
 #define VERTEX_DATA 0
 #define VERTEX_NORMAL 1
-#define CAUSTIC_BLUR_INENSITY 4
+#define CAUSTIC_BLUR_INENSITY 0
 const unsigned int width = 1920;
 const unsigned int height = 1080;
 unsigned int gBuffer, gBufferBlur, gCaustic, gCausticBlurred;
@@ -438,6 +438,7 @@ void setupRenderingContext() {
 	glBindAttribLocation(causticMapShader, VERTEX_DATA, "position");
 	//glBindAttribLocation( myShaderProgram, VERTEX_COLOUR, "vColor" );
 	glBindAttribLocation(causticMapShader, VERTEX_NORMAL, "normal");
+	glBindAttribLocation(causticMapShader, 2, "texcoord");
 
 	glLinkProgram(causticMapShader);
 	glDeleteShader(causticMapVertexShader);
@@ -649,6 +650,9 @@ int main(int argc, char** argv)
 	}
 	std::cout << causticMesh->vertices.size() << "\n";
 	std::cout << waterMesh->vertices.size() << "\n";
+	//for (int i = 0; i < waterMesh->tex.size(); i+=2) {
+	//	std::cout << waterMesh->tex[i] << ", " << waterMesh->tex[i + 1] << std::endl;
+	//}
 
 
 	// https://stackoverflow.com/questions/481144/equation-for-testing-if-a-point-is-inside-a-circle
@@ -737,7 +741,6 @@ int main(int argc, char** argv)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
-
 	// Main while loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -778,6 +781,7 @@ int main(int argc, char** argv)
 
 		//waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
 		
+
 		// first framebuffer: caustic map
 		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -785,7 +789,7 @@ int main(int argc, char** argv)
 			glBindVertexArray(myVAO);
 		
 			glUniform1i(glGetUniformLocation(causticMapShader, "texture1"), 0);
-			//glUniform1i(glGetUniformLocation(causticMapShader, "texture2"), 0);
+			glUniform1i(glGetUniformLocation(causticMapShader, "gNormal"), 1);
 		
 			scaling = scale(mat4(1.0f), vec3(0.50));
 			rot = rotate(mat4(1.f), glm::radians(90.f), glm::vec3(1, 0, 0));
@@ -794,6 +798,8 @@ int main(int argc, char** argv)
 		
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, texture1);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, gNormal);
 			
 			//glActiveTexture(GL_TEXTURE1);
 			//glBindTexture(GL_TEXTURE_1D, texture);
