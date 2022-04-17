@@ -39,7 +39,7 @@ void main()
         for (float y = startY; y <= endY; y+= 0.25) {
             vec3 normTex = normalize(texture(gNormal, vec2(x, y)).rgb);
             intensity = pow(1.f - distance(tex, vec2(x, y)), 4);
-            float map = max(pow(dot(normTex, vec3(0, 1, 0)), 512) - 0.5, 0);
+            float map = max(pow(dot(normTex, vec3(0, 1, 0)), 1024) - 0.5, 0);
 	        caustic += texture(texture1, vec2(map)).r  * 0.5 * intensity;
         }
         

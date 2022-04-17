@@ -743,6 +743,13 @@ int main(int argc, char** argv)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
+	// variables for FPS counter
+	double prevTime = 0.0;
+	double crntTime = 0.0;
+	double timeDiff;
+	unsigned int counter = 0;
+
+
 	// Main while loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -752,6 +759,23 @@ int main(int argc, char** argv)
 		// Clean the back buffer and depth buffer
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+
+		// update variables
+		crntTime = glfwGetTime();
+		timeDiff = crntTime - prevTime;
+		counter++;
+		if (timeDiff >= 1.0 / 30.0)
+		{
+			std::string FPS = std::to_string((int)((1.0 / timeDiff) * counter));
+			std::string ms = std::to_string((timeDiff / counter) * 1000);
+			std::string newTitle = "CPSC 591 Water Caustics - " + FPS + "FPS / " + ms + "ms";
+			glfwSetWindowTitle(window, newTitle.c_str());
+
+			// reset timer/counter
+			prevTime = crntTime;
+			counter = 0;
+		}
 
 		
 		
@@ -928,7 +952,6 @@ int main(int argc, char** argv)
 		
 		for (int i = 0; i < waterMesh->vertices.size(); i += 4) {
 			float x = waterMesh->vertices[i];
-			float y = waterMesh->vertices[i + 1];
 			float z = waterMesh->vertices[i + 2];
 			float dist = glm::length(glm::vec3(x, 0, z));
 			//waterMesh->vertices[i + 1] = 0;
