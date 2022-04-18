@@ -49,5 +49,5 @@ void main()
 
 //	FragColor = texelFetch(texture3,1,0);
 //	FragColor = vec4(texture(gp,tex).rgb,1.0);
-	FragColor = vec4(vec3(caustic),1.0);
+//	FragColor = vec4(vec3(caustic),1.0);
 }

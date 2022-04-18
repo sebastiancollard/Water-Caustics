@@ -29,7 +29,6 @@ using namespace glm;
 
 
 
-void renderQuad();
 
 // Vertex array object
 GLuint myVAO;
@@ -62,8 +61,10 @@ string waterMapFSFilename = "waterMap.frag";
 ObjFile* waterMesh;
 ObjFile* causticMesh;
 
-float sizes = 0.2f;
+ObjFile* waterMesh80;
+ObjFile* causticMesh80;
 
+void wavePresetsUpdate(ObjFile* waterMesh, float time);
 
 // Transformation matrices
 mat4 rot = mat4(1.0f);
@@ -74,6 +75,14 @@ float scalar = 1.0f;
 //shader constants
 float amplitude = 0.06125;
 float frequency = 4;
+bool wavePre0 = false;
+bool wavePre1 = false;
+bool wavePre2 = false;
+bool wavePre3 = true;
+bool wavePre4 = false;
+
+bool plane80 = false;
+bool plane160 = true;
 //const float amplitude = 0.2;
 //const float frequency = 2;
 const float PI = 3.14159;
@@ -164,7 +173,12 @@ void renderScene() {
 
 	// Note that this version of the draw command uses the
 	// bound index buffer to get the vertex coordinates.
-	waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+	if (plane160) {
+		waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+	}
+	else if (plane80) {
+		waterMesh80->draw(VERTEX_DATA, VERTEX_NORMAL);
+	}
 }
 
 
@@ -536,13 +550,23 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	waterMesh = new ObjFile(argv[1]);
+	// Initalization of Planes
+	char plane[] = "./models/plane.obj";
+	char plane2[] = "./models/plane2.obj";
+
+	waterMesh = new ObjFile(plane2);
 	if (waterMesh->numVertices() == 0) {
 		cout << "Could not load file " << argv[1] << ".\n";
 		exit(EXIT_FAILURE);
 	}
+	causticMesh = new ObjFile(plane2);
 
-	causticMesh = new ObjFile(argv[1]);
+	waterMesh80 = new ObjFile(plane);
+	if (waterMesh80->numVertices() == 0) {
+		cout << "Could not load file " << argv[1] << ".\n";
+		exit(EXIT_FAILURE);
+	}
+	causticMesh80 = new ObjFile(plane);
 	// Initialize GLFW
 	glfwInit();
 
@@ -655,21 +679,23 @@ int main(int argc, char** argv)
 	glGenBuffers(1, &waterMesh->vertexBuffer);
 	glGenBuffers(1, &waterMesh->indexBuffer);
 	waterMesh->bufferData(waterMesh->normals);
-	//scaling = waterMesh->getFitScale();
-	//translation = waterMesh->getFitTranslate();
-	
-	//setupRenderingContextFineMesh();
+
 	causticMesh->calculateNormals();
 	glGenBuffers(1, &causticMesh->vertexBuffer);
 	glGenBuffers(1, &causticMesh->indexBuffer);
 	causticMesh->bufferData(causticMesh->normals);
-	//scaling = causticMesh->getFitScale();
-	//translation = causticMesh->getFitTranslate();
 
-	//unsigned int Tex;
-	//glGenBuffers(1, &Tex);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Tex);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexGround), indexGround, GL_STATIC_DRAW);
+	waterMesh80->calculateNormals();
+	glGenBuffers(1, &waterMesh80->vertexBuffer);
+	glGenBuffers(1, &waterMesh80->indexBuffer);
+	waterMesh80->bufferData(waterMesh80->normals);
+
+	causticMesh80->calculateNormals();
+	glGenBuffers(1, &causticMesh80->vertexBuffer);
+	glGenBuffers(1, &causticMesh80->indexBuffer);
+	causticMesh80->bufferData(causticMesh80->normals);
+
+
 	for (int i = 0; i < causticMesh->vertices.size(); i += 4) {
 		causticMesh->vertices[i + 1] = -groundOffset;
 
@@ -683,64 +709,27 @@ int main(int argc, char** argv)
 		waterMesh->tex.push_back((z + 2.0f) / 4.0f);
 		// vec2( (pos.x/4)+2, (pos.z/4)+2 )
 	}
-	std::cout << causticMesh->vertices.size() << "\n";
-	std::cout << waterMesh->vertices.size() << "\n";
-	//for (int i = 0; i < waterMesh->tex.size(); i+=2) {
-	//	std::cout << waterMesh->tex[i] << ", " << waterMesh->tex[i + 1] << std::endl;
-	//}
+
+	causticMesh->bufferData(waterMesh->normals);
+
+	for (int i = 0; i < causticMesh80->vertices.size(); i += 4) {
+		causticMesh80->vertices[i + 1] = -groundOffset;
 
 
-	// https://stackoverflow.com/questions/481144/equation-for-testing-if-a-point-is-inside-a-circle
-	float radiusCheck = 0.1f;
-	
-	/*
-	for (int i = 0; i < causticMesh->vertices.size(); i += 4) {
-		float xCenter = causticMesh->vertices[i];
-		float zCenter = causticMesh->vertices[i + 2];
-		for (int j = 0; j < waterMesh->vertices.size(); j += 4) {
-			if (j != i) {
-				float x = waterMesh->vertices[j];
-				float z = waterMesh->vertices[j + 2];
+		float x = causticMesh80->vertices[i];
+		float z = causticMesh80->vertices[i + 2];
+		causticMesh80->tex.push_back((x + 2.0f) / 4.0f);
+		causticMesh80->tex.push_back((z + 2.0f) / 4.0f);
 
-				float xIn = (x - xCenter) * (x - xCenter);
-				float zIn = (z - zCenter) * (z - zCenter);
-
-				if (xIn + zIn < (radiusCheck * radiusCheck)) {
-					causticMesh->closeVertex.push_back(vec3(1.0, 0.0f , 0.0f));
-					//std::cout << "x: "<<x << "\n";
-					//std::cout << "z: "<<z << "\n";
-					 //causticMesh->closeVertex.push_back(vec3(0.0f, 1.0f, 0.0f));
-					//causticMesh->closeVertex.push_back(waterMesh->vertices[j+1]);
-					//causticMesh->closeVertex.push_back(z);
-				}
-			}
-		}
+		waterMesh80->tex.push_back((z + 2.0f) / 4.0f);
+		waterMesh80->tex.push_back((z + 2.0f) / 4.0f);
+		// vec2( (pos.x/4)+2, (pos.z/4)+2 )
 	}
-	*/
-	
-	
-	//causticMesh->closeVertex.push_back(vec3(0.0f, 1.0f, 0.0f));
-	//causticMesh->closeVertex.push_back(vec3(1.0f, 0.0f, 0.0f));
-	//causticMesh->closeVertex.push_back(vec3(0.0f, 0.0f, 1.0f));
-	
-	//std::cout << causticMesh->closeVertex.size()<< "\n";
+
+	causticMesh80->bufferData(waterMesh80->normals);
 
 
 
-
-	/*
-	unsigned int texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_1D, texture);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB16F, causticMesh->closeVertex.size(), 0, GL_RGB, GL_FLOAT, &causticMesh->closeVertex[0]);
-	*/
-
-	//std::cout << causticMesh->vertices.size() << "\n";
-	//std::cout << causticMesh->tex.size() << "\n";
 	std::cout << "MAXSIZE: "<<GL_MAX_TEXTURE_SIZE << "\n";
 
 	unsigned int gBufferWater;
@@ -785,38 +774,6 @@ int main(int argc, char** argv)
 
 	
 
-	// 
-	// 
-	// FILES ADDED:
-	/*	givio.cpp
-	*	givio.h
-	*	givr.cpp
-	*	givr.h
-	*	panel.cpp
-	*	panel.h
-	*	picking_controls.cpp
-	*	picking_controls.h
-	*	picking_controls.h.autosave
-	*	turntable_controls.h
-	* 
-	*	imgui
-	*	imgui_bckup
-	* 
-	*/
-	
-	/*
-		namespace givio = giv::io; // perhaps better than giv::io
-		givio::GLFWContext glContext;
-		glContext.glMajorVesion(4)
-			.glMinorVesion(0)
-			.glForwardComaptability(true)
-			.glCoreProfile()
-			.glAntiAliasingSamples(4)
-			.matchPrimaryMonitorVideoMode();
-			*/
-			
-	//giv::io::ImGuiBeginFrame();
-	//panel::showPanel = true;
 
 	// Main while loop
 	IMGUI_CHECKVERSION();
@@ -831,7 +788,6 @@ int main(int argc, char** argv)
 
 	while (!glfwWindowShouldClose(window))
 	{
-
 
 
 
@@ -862,13 +818,9 @@ int main(int argc, char** argv)
 			counter = 0;
 		}
 
-		
-		
-//		for (int i = 0; i < waterMesh->normals.size(); i++) {
-//			causticMesh->normals[i] = waterMesh->normals[i];
-//		}
-		
 		causticMesh->bufferData(waterMesh->normals);
+		causticMesh80->bufferData(waterMesh80->normals);
+	
 
 		// disable blending for framebuffer stuff
 		glDisable(GL_BLEND);
@@ -880,13 +832,18 @@ int main(int argc, char** argv)
 			glUseProgram(waterMapShader);
 			glBindVertexArray(myVAO);
 
-			scaling = scale(mat4(1.0f), vec3(0.50));
+			scaling = scale(mat4(1.0f), vec3(0.5));
 			rot = rotate(mat4(1.f), glm::radians(90.f), glm::vec3(1, 0, 0));
-			translation = translate(mat4(1.f), glm::vec3(0, groundOffset, 0));
+		//	translation = translate(mat4(1.f), glm::vec3(0, -groundOffset, 0));
 			mat4 model = rot * scaling * translation;
 			glUniformMatrix4fv(glGetUniformLocation(waterMapShader, "model"), 1, GL_FALSE, value_ptr(model));
 
-			waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+			if (plane160) {
+				waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+			}
+			else if (plane80) {
+				waterMesh80->draw(VERTEX_DATA, VERTEX_NORMAL);
+			}
 			//causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
 			
 			glBindVertexArray(0);
@@ -922,8 +879,12 @@ int main(int argc, char** argv)
 			//glActiveTexture(GL_TEXTURE1);
 			//glBindTexture(GL_TEXTURE_1D, texture);
 
-		
-			causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+			if (plane160) {
+				causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+			}
+			else if (plane80) {
+				causticMesh80->draw(VERTEX_DATA, VERTEX_NORMAL);
+			}
 		
 			glBindVertexArray(0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -942,8 +903,13 @@ int main(int argc, char** argv)
 		
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, gCaustic);
-		
-			causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+			
+			if (plane160) {
+				causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+			}
+			else if(plane80) {
+				causticMesh80->draw(VERTEX_DATA, VERTEX_NORMAL);
+			}
 		
 			glBindVertexArray(0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1008,29 +974,12 @@ int main(int argc, char** argv)
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, gNormal);
 
-//		glActiveTexture(GL_TEXTURE0);
-//		glBindTexture(GL_TEXTURE_2D, gPosition);
-//		glActiveTexture(GL_TEXTURE1);
-//		glBindTexture(GL_TEXTURE_2D, gNormal);
-//		glActiveTexture(GL_TEXTURE2);
-//		glBindTexture(GL_TEXTURE_2D, texture1);
-
-//		glActiveTexture(GL_TEXTURE3);
-//		glBindTexture(GL_TEXTURE_2D, texture2);
-//		glActiveTexture(GL_TEXTURE4);
-//		glBindTexture(GL_TEXTURE_2D, gCausticBlurred);
-
-		//glActiveTexture(GL_TEXTURE3);
-		//glBindTexture(GL_TEXTURE_1D, texture);
-
-		//glUniform1fv(glGetUniformLocation(fineMeshShader, "samples"), 6561, &(file->normals[0]));
-
-		//Set shader uniforms
-		//glUniform3f(glGetUniformLocation(fineMeshShader, "light_pos"), 1.0f, 1.0f, -1.0f);
-
-		// Note that this version of the draw command uses the
-		// bound index buffer to get the vertex coordinates.
-		causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+		if (plane160) {
+			causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+		}
+		else if (plane80) {
+			causticMesh80->draw(VERTEX_DATA, VERTEX_NORMAL);
+		}
 
 		glBindVertexArray(0);
 		
@@ -1046,80 +995,17 @@ int main(int argc, char** argv)
 		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
 		float time = glfwGetTime();
 		
-		
-		for (int i = 0; i < waterMesh->vertices.size(); i += 4) {
-			float x = waterMesh->vertices[i];
-			float z = waterMesh->vertices[i + 2];
-			float dist = glm::length(glm::vec3(x, 0, z));
-			//waterMesh->vertices[i + 1] = 0;
-			GLfloat temp = 0.f;
-			float time2 = time * 2;
-			float timemil = time + 30000;
-			// plane.obj
-			//temp = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time2)+1)/2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
-			//temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
-			//temp += amplitude * sin(-PI * x * frequency / 16 + time2);
-			//temp += amplitude / 10 * sin(-PI * dist * frequency * 5 + time2);
-			//waterMesh->vertices[i + 1] = temp;
-
-			// plane2.obj
-			// BASE
-			//temp = amplitude / 10.f * ( 
-			//	0.2 * ( 
-			//		-3.2 * sin(-1.3*(1-dist)*timemil * 4) 
-			//		- 1.2 * sin(-1.7*E*z * timemil) 
-			//		+ 1.9*sin(1.6*PI*x * timemil) 
-			//		) 
-			//	);
-			//temp += amplitude * sin(-PI * x * frequency / 16 + time2);
-			//temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
-			//temp += amplitude / 50.f * sin(-PI * dist * frequency * 5 + time2);
-			//temp += amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time2) + 1) / 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
-			//waterMesh->vertices[i + 1] = temp;
-
-			// PATTERN 1
-			//blurIntensity = 1;
-			//sampleSteps = 5;
-			//sunDistance = 32;
-			//baseIntensity = 0.25f;
-			//temp += amplitude * sin(-PI * x * frequency / 16 + time2);
-			//temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
-			////temp += amplitude / 50.f * sin(-PI * dist * frequency * 5 + time2);
-			//temp += amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
-			//waterMesh->vertices[i + 1] = temp;
-
-			// PATTERN 2
-			blurIntensity = 1;
-			sampleSteps = 4;
-			sunDistance = 128;
-			baseIntensity = 0.2f;
-			temp = amplitude / 10.f * ( 
-				0.2 * ( 
-					-3.2 * sin(-1.3*PHI*(1-dist/2)*timemil * 4) 
-					- 1.2 * sin(-1.7*E*z * time) 
-					+ 1.9*sin(1.7*PI*x * timemil) 
-					) 
-				);
-			temp += amplitude / 50.f * sin(-PI * dist * frequency * 5 + time2);
-			waterMesh->vertices[i + 1] = temp;
-
-			// PATTERN 3
-			//temp = amplitude / 10.f * ( 
-			//	0.2 * ( 
-			//		-3.2 * sin(-1.3*(1-dist)*timemil * 4) 
-			//		- 1.2 * sin(-1.7*E*z * timemil) 
-			//		+ 1.9*sin(1.6*PI*x * timemil) 
-			//		) 
-			//	);
-			//waterMesh->vertices[i + 1] = temp;
+		int vertSize = 0;
+		if (plane160) {
+			wavePresetsUpdate(waterMesh, time);
+		}
+		else if (plane80) {
+			wavePresetsUpdate(waterMesh80, time);
 		}
 		
-		
-		
 
 		
-		waterMesh->calculateNormals();
-		waterMesh->bufferData(waterMesh->normals);
+
 		// Handles camera inputs
 
 		if (!io.WantCaptureMouse) {
@@ -1135,6 +1021,66 @@ int main(int argc, char** argv)
 		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		ImGui::Begin("SandBox!");
+
+		if (ImGui::Button("80 x 80 Plane")) {
+
+			plane80 = true;
+			plane160 = false;
+
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("160 x 160 Plane")) {
+			plane80 = false;
+			plane160 = true;
+		}
+		if (ImGui::Button("Wave Preset 0")) {
+
+			wavePre0 = true;
+
+			wavePre1 = false;
+			wavePre2 = false;
+			wavePre3 = false;
+			wavePre4 = false;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Wave Preset 1")) {
+
+			wavePre1 = true;
+			
+			wavePre0 = false;
+			wavePre2 = false;
+			wavePre3 = false;
+			wavePre4 = false;
+		}
+		if (ImGui::Button("Wave Preset 2")) {
+
+			wavePre2 = true;
+
+			wavePre0 = false;
+			wavePre1 = false;
+			wavePre3 = false;
+			wavePre4 = false;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Wave Preset 3")) {
+
+			wavePre3 = true;
+
+			wavePre0 = false;
+			wavePre1 = false;
+			wavePre2 = false;
+			wavePre4 = false;
+		}
+
+		if (ImGui::Button("Wave Preset 4")) {
+
+			wavePre4 = true;
+
+			wavePre0 = false;
+			wavePre1 = false;
+			wavePre2 = false;
+			wavePre3 = false;
+		}
 		ImGui::SliderFloat("Wave Amplitude", &amplitude, 0.01f, 0.4f);
 		ImGui::SliderFloat("Frequency", &frequency, 0.f, 8.f);
 		ImGui::SliderFloat("Ground Offset", &groundOffset, 0.f, 8.f);
@@ -1168,34 +1114,99 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-unsigned int quadVAO = 0;
-unsigned int quadVBO;
-void renderQuad()
-{
-	if (quadVAO == 0)
-	{
-		float quadVertices[] = {
-			// positions        // texture Coords
-			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-		};
-		// setup plane VAO
-		glGenVertexArrays(1, &quadVAO);
-		glGenBuffers(1, &quadVBO);
-		glBindVertexArray(quadVAO);
-		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+void wavePresetsUpdate(ObjFile *waterMesh, float time) {
+	int vertSize = waterMesh->vertices.size();
+	for (int i = 0; i < vertSize; i += 4) {
+		float x = waterMesh->vertices[i];
+		float z = waterMesh->vertices[i + 2];
+		float dist = glm::length(glm::vec3(x, 0, z));
+		//waterMesh->vertices[i + 1] = 0;
+		GLfloat temp = 0.f;
+		float time2 = time * 2;
+		float timemil = time + 30000;
+		// plane.obj
+		if (wavePre0) {
+			temp = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time2) + 1) / 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
+			temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
+			temp += amplitude * sin(-PI * x * frequency / 16 + time2);
+			temp += amplitude / 10 * sin(-PI * dist * frequency * 5 + time2);
+			waterMesh->vertices[i + 1] = temp;
+		}
+
+		// plane2.obj
+		// BASE
+		else if (wavePre1) {
+			temp = amplitude / 10.f * (
+				0.2 * (
+					-3.2 * sin(-1.3 * (1 - dist) * timemil * 4)
+					- 1.2 * sin(-1.7 * E * z * timemil)
+					+ 1.9 * sin(1.6 * PI * x * timemil)
+					)
+				);
+			temp += amplitude * sin(-PI * x * frequency / 16 + time2);
+			temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
+			temp += amplitude / 50.f * sin(-PI * dist * frequency * 5 + time2);
+			temp += amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time2) + 1) / 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
+			waterMesh->vertices[i + 1] = temp;
+
+
+		}
+
+		// PATTERN 1
+		//
+		else if (wavePre2) {
+			blurIntensity = 1;
+			sampleSteps = 5;
+			sunDistance = 32;
+			baseIntensity = 0.25f;
+			temp += amplitude * sin(-PI * x * frequency / 16 + time2);
+			temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
+			temp += amplitude / 50.f * sin(-PI * dist * frequency * 5 + time2);
+			temp += amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
+			waterMesh->vertices[i + 1] = temp;
+
+
+		}
+
+		// PATTERN 2
+		else if (wavePre3) {
+			blurIntensity = 1;
+			sampleSteps = 4;
+			sunDistance = 128;
+			baseIntensity = 0.2f;
+			temp = amplitude / 10.f * (
+				0.2 * (
+					-3.2 * sin(-1.3 * PHI * (1 - dist / 2) * timemil * 4)
+					- 1.2 * sin(-1.7 * E * z * time)
+					+ 1.9 * sin(1.7 * PI * x * timemil)
+					)
+				);
+			temp += amplitude / 50.f * sin(-PI * dist * frequency * 5 + time2);
+			waterMesh->vertices[i + 1] = temp;
+
+
+		}
+
+		// PATTERN 3
+		else if (wavePre4) {
+			temp = amplitude / 10.f * (
+				0.2 * (
+					-3.2 * sin(-1.3 * (1 - dist) * timemil * 4)
+					- 1.2 * sin(-1.7 * E * z * timemil)
+					+ 1.9 * sin(1.6 * PI * x * timemil)
+					)
+				);
+			waterMesh->vertices[i + 1] = temp;
+
+
+		}
 	}
-	glBindVertexArray(quadVAO);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glBindVertexArray(0);
+	waterMesh->calculateNormals();
+	waterMesh->bufferData(waterMesh->normals);
 }
+
+
+
 
 
 
@@ -1205,4 +1216,6 @@ https://learnopengl.com/Getting-started/Textures
 https://subscription.packtpub.com/book/game-development/9781849695046/1/ch01lvl1sec12/doing-a-ripple-mesh-deformer-using-the-vertex-shader
 https://www.gamasutra.com/view/feature/2811/inexpensive_underwater_caustics_.php?print=1
 https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping 
+https://stackoverflow.com/questions/5192068/c-char-argv-vs-char-argv
+https://www.youtube.com/watch?v=VRwhNKoxUtk&ab_channel=VictorGordan
 */
