@@ -930,7 +930,7 @@ int main(int argc, char** argv)
 		glUniform1i(glGetUniformLocation(groundShader, "texture2"), 1);
 		glUniform1i(glGetUniformLocation(groundShader, "gCausticBlurred"), 2);
 		glUniform1i(glGetUniformLocation(groundShader, "gp"), 3);
-		glUniform1f(glGetUniformLocation(causticMapShader, "groundOffset"), groundOffset);
+		glUniform1f(glGetUniformLocation(groundShader, "groundOffset"), groundOffset);
 
 		//glUniform1i(glGetUniformLocation(groundShader, "gp"), 0);
 		//glUniform1i(glGetUniformLocation(groundShader, "gpp"), 1);

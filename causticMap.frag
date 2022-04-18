@@ -64,18 +64,18 @@ void main()
 
             // calculate text coord mapping based on the angle between the refracted angle and the 
             // up vector (sun is directly above at all locations).
-            float map = max(pow(dot(refrac, vec3(0, 1, 0)), max(sunDistance-pow(groundOffset, 3), 4)) - 0.5, 0.f);
+            float map = max(pow(dot(refrac, vec3(0, 1, 0)), max(sunDistance-pow(groundOffset, 3), 64)) - 0.5, 0.f);
 
             // calaulate distance weighting
             distanceIntensity = pow(1.f - distance(tex, vec2(x, y)), 4);
 	        
             // add the mapping on the sun texture multiplied by intensity variables
             // accumulate this for each sample.
-            FragColor += texture(texture1, vec2(map)).r * clamp(1.f/groundOffset, 1.f, 1.5f) * baseIntensity * distanceIntensity;
+            FragColor += texture(texture1, vec2(map)).r * max(1.f/groundOffset, 1.f) * baseIntensity * distanceIntensity;
         }
     }
 
-    FragColor = min(pow(FragColor,2) , 1.f);
+    FragColor = min(pow(FragColor,groundOffset+1) , 1.f);
 
     // for debugging caustic 
     //FragColor = tex.x < 0.5f && tex.y < 0.5f ? texture(gNormal, tex).r : 0.f;
