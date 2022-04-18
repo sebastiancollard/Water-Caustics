@@ -711,7 +711,7 @@ int main(int argc, char** argv)
 	causticMesh->bufferData(waterMesh->normals);
 
 	for (int i = 0; i < causticMesh80->vertices.size(); i += 4) {
-		causticMesh80->vertices[i + 1] = -groundOffset;
+		//causticMesh80->vertices[i + 1] = -groundOffset;
 
 
 		float x = causticMesh80->vertices[i];
@@ -1175,7 +1175,7 @@ void wavePresetsUpdate(ObjFile *waterMesh, float time) {
 
 		// PATTERN 2
 		else if (wavePre3) {
-			blurIntensity = 2;
+			//blurIntensity = 2;
 			sampleSteps = 4;
 			sunDistance = 128;
 			baseIntensity = 0.2f;
