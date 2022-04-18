@@ -1137,6 +1137,7 @@ int main(int argc, char** argv)
 		ImGui::Begin("SandBox!");
 		ImGui::SliderFloat("Wave Amplitude", &amplitude, 0.01f, 0.4f);
 		ImGui::SliderFloat("Frequency", &frequency, 0.f, 8.f);
+		ImGui::SliderFloat("Ground Offset", &groundOffset, 0.f, 8.f);
 		ImGui::End();
 
 		ImGui::Render();
