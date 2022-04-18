@@ -44,7 +44,7 @@ void main()
 	//FragColor = vec4(intercept,1.0f);
 	
 	vec3 res = texture(texture2,tex).rgb * 0.9f + texture(texture2,tex).rgb * vec3(caustic) ;
-	res = min(res, texture(texture2,tex).rgb * 1.4) + waterColor * 0.3f;
+	res = min(res, texture(texture2,tex).rgb * 1.35) + waterColor * 0.3f;
 
 	FragColor = vec4(res,1.0f);
 

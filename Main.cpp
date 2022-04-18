@@ -103,7 +103,7 @@ float groundOffset = 1.f;
 int blurIntensity = 2;
 unsigned int sampleSteps = 4;
 unsigned int sunDistance = 1024;
-float baseIntensity = 0.35f;
+float baseIntensity = 0.25f;
 
 const unsigned int width = 1920;
 const unsigned int height = 1080;
@@ -511,7 +511,7 @@ void setupRenderingContext() {
 	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 	glGenTextures(1, &gCaustic);
 	glBindTexture(GL_TEXTURE_2D, gCaustic);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 2048, 2048, 0, GL_RED, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 3840, 3840, 0, GL_RED, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gCaustic, 0);
@@ -523,7 +523,7 @@ void setupRenderingContext() {
 	glBindFramebuffer(GL_FRAMEBUFFER, gBufferBlur);
 	glGenTextures(1, &gCausticBlurred);
 	glBindTexture(GL_TEXTURE_2D, gCausticBlurred);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 2048, 2048, 0, GL_RED, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 3840, 3840, 0, GL_RED, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gCausticBlurred, 0);
@@ -538,10 +538,6 @@ int main(int argc, char** argv)
 	//												//
 	// TEST I believe there are some LINKER ISSUES //
 	//						
-	vec2 incidentVector = glm::normalize(vec2(1.f));
-	vec2 normalVector = vec2(0.f, 1.f);
-	vec2 result = glm::refract(incidentVector, -normalVector, 1.0f);
-	std::cout << result.x << " " << result.y << std::endl;
 
 	if (argc != 2) {
 		cout << "Usage: " << argv[0] << " filename\n";
@@ -851,7 +847,7 @@ int main(int argc, char** argv)
 
 		//waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
 
-		glViewport(0, 0, 2048, 2048);
+		glViewport(0, 0, 3840, 3840);
 		// first framebuffer: caustic map
 		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1178,7 +1174,7 @@ void wavePresetsUpdate(ObjFile *waterMesh, float time) {
 			//blurIntensity = 2;
 			sampleSteps = 4;
 			sunDistance = 128;
-			baseIntensity = 0.2f;
+			//baseIntensity = 0.2f;
 			temp = amplitude / 10.f * (
 				0.2 * (
 					-3.2 * sin(-1.3 * PHI * (1 - dist / 2) * timemil * 4)
