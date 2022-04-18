@@ -46,29 +46,31 @@ void main()
     for (float x = startX; x <= endX; x+=incrementX) {
         for (float y = startY; y <= endY; y+=incrementY) {
             // calculate 2d direction of the current sample relative to the current frag position
-            vec2 dir2D = normalize(vec2(x, y)-tex);
+            vec2 dir2D = vec2(x, y)-tex;
 
             // the starting wave plane is 1.5 units above the ground,
             // this only approximates the vector as it does not account
             // for the added height variation of the wave equation.
-            vec3 dir3D = normalize(vec3(dir2D.x, groundOffset, dir2D.y));
+            vec3 dir3D = normalize(vec3(dir2D.x, 1.f/groundOffset, dir2D.y));
 
             // get sample normal from texture
             vec3 normTex = normalize(texture(gNormal, vec2(x, y)).rgb);
 
             // get refracted direction
-            refrac = normalize(refract(dir3D, normTex, 1.333));
+            refrac = normalize(refract(dir3D, -normTex, 1.333));
+            refrac = normalize(vec3(normTex.x, (1-pow(dot(dir3D, normTex),64)) * normTex.y, normTex.z));
+            //refrac = normalize(normTex+vec3(dir2D.x, 0, dir2D.y));
 
             // calculate text coord mapping based on the angle between the refracted angle and the 
             // up vector (sun is directly above at all locations).
-            float map = max(pow(dot(normTex, vec3(0, 1, 0)), sunDistance) - 0.5, 0);
+            float map = max(pow(dot(refrac, vec3(0, 1, 0)), max(sunDistance-pow(groundOffset, 3), 8)) - 0.5, 0.f);
 
             // calaulate distance weighting
             distanceIntensity = pow(1.f - distance(tex, vec2(x, y)), 4);
 	        
             // add the mapping on the sun texture multiplied by intensity variables
             // accumulate this for each sample.
-            FragColor += texture(texture1, vec2(map)).r  * baseIntensity * distanceIntensity;
+            FragColor += texture(texture1, vec2(map)).r * 1.f/groundOffset * baseIntensity * distanceIntensity;
         }
     }
 

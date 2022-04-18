@@ -22,7 +22,7 @@ void main()
 {
 	// https://www.khronos.org/opengl/wiki/Vertex_Shader#:~:text=Vertex%20shaders%20are%20fed%20Vertex,input%20vertices%20to%20output%20vertices.
 	// gl_vertexID
-	gl_Position = camMatrix * position;
+	gl_Position = camMatrix * model * position;
 	// 6561
 	// Get normal for location
 	//float a = float(gl_VertexID) / 6561.0;
