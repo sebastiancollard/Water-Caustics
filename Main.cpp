@@ -101,9 +101,9 @@ float gold_noise(vec2 xy, float seed) {
 float groundOffset = 1.f;
 
 int blurIntensity = 2;
-unsigned int sampleSteps = 4;
+int sampleSteps = 3;
 unsigned int sunDistance = 1024;
-float baseIntensity = 0.25f;
+float baseIntensity = 0.6f;
 
 const unsigned int width = 1920;
 const unsigned int height = 1080;
@@ -511,7 +511,7 @@ void setupRenderingContext() {
 	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 	glGenTextures(1, &gCaustic);
 	glBindTexture(GL_TEXTURE_2D, gCaustic);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 3840, 3840, 0, GL_RED, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 4096, 4096, 0, GL_RED, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gCaustic, 0);
@@ -523,7 +523,7 @@ void setupRenderingContext() {
 	glBindFramebuffer(GL_FRAMEBUFFER, gBufferBlur);
 	glGenTextures(1, &gCausticBlurred);
 	glBindTexture(GL_TEXTURE_2D, gCausticBlurred);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 3840, 3840, 0, GL_RED, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 4096, 4096, 0, GL_RED, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gCausticBlurred, 0);
@@ -847,7 +847,7 @@ int main(int argc, char** argv)
 
 		//waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
 
-		glViewport(0, 0, 3840, 3840);
+		glViewport(0, 0, 4096, 4096);
 		// first framebuffer: caustic map
 		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -884,6 +884,7 @@ int main(int argc, char** argv)
 		glBindVertexArray(0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+		//glViewport(0, 0, 2048, 2048);
 
 		// second framebuffer: caustic map blurred
 		glBindFramebuffer(GL_FRAMEBUFFER, gBufferBlur);
@@ -1082,8 +1083,9 @@ int main(int argc, char** argv)
 			ImGui::SliderFloat("Wave Amplitude", &amplitude, 0.01f, 0.4f);
 			ImGui::SliderFloat("Frequency", &frequency, 0.f, 8.f);
 			ImGui::SliderFloat("Ground Offset", &groundOffset, 0.4f, 5.f);
-			ImGui::SliderFloat("Base Intensity", &baseIntensity, 0.f, 1.f);
+			ImGui::SliderFloat("Base Intensity", &baseIntensity, 0.f, 5.f);
 			ImGui::SliderInt("Blur Intensity", &blurIntensity, 0, 5);
+			ImGui::SliderInt("Sample Steps", &sampleSteps, 1, 5);
 			ImGui::End();
 
 			ImGui::Render();
@@ -1157,7 +1159,7 @@ void wavePresetsUpdate(ObjFile *waterMesh, float time) {
 		//
 		else if (wavePre2) {
 			blurIntensity = 1;
-			sampleSteps = 5;
+			//sampleSteps = 5;
 			sunDistance = 32;
 			baseIntensity = 0.25f;
 			temp += amplitude * sin(-PI * x * frequency / 16 + time2);
@@ -1172,7 +1174,7 @@ void wavePresetsUpdate(ObjFile *waterMesh, float time) {
 		// PATTERN 2
 		else if (wavePre3) {
 			//blurIntensity = 2;
-			sampleSteps = 4;
+			//sampleSteps = 4;
 			sunDistance = 128;
 			//baseIntensity = 0.2f;
 			temp = amplitude / 10.f * (

@@ -71,9 +71,11 @@ void main()
 	        
             // add the mapping on the sun texture multiplied by intensity variables
             // accumulate this for each sample.
-            FragColor += texture(texture1, vec2(map)).r * 1.f/groundOffset * baseIntensity * distanceIntensity;
+            FragColor += texture(texture1, vec2(map)).r * clamp(1.f/groundOffset, 1.f, 1.5f) * baseIntensity * distanceIntensity;
         }
     }
+
+    FragColor = min(pow(FragColor,2) , 1.f);
 
     // for debugging caustic 
     //FragColor = tex.x < 0.5f && tex.y < 0.5f ? texture(gNormal, tex).r : 0.f;
