@@ -49,7 +49,7 @@ void main()
 //	}
 	//float y = amplitude*sin((sqrt(aPos.x * aPos.x + aPos.z * aPos.z)/1.0f + time) * -2*PI);
 	// Outputs the positions/coordinates of all vertices
-	gl_Position = camMatrix * vec4(position, 1.0);
+	gl_Position = camMatrix * model * vec4(position, 1.0);
 	// Assigns the colors from the Vertex Data to "color"
 	Normal = normal;
 

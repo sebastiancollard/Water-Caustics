@@ -13,6 +13,7 @@ uniform sampler2D texture1;
 uniform sampler2D texture2;
 uniform sampler2D gCausticBlurred;
 uniform sampler2D gp;
+uniform float groundOffset;
 
 //uniform sampler2D gp;
 //uniform sampler2D gpp;
@@ -49,5 +50,5 @@ void main()
 
 //	FragColor = texelFetch(texture3,1,0);
 //	FragColor = vec4(texture(gp,tex).rgb,1.0);
-//	FragColor = vec4(vec3(caustic),1.0);
+	//FragColor = vec4(vec3(caustic),1.0);
 }

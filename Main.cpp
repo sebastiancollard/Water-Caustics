@@ -98,12 +98,12 @@ float gold_noise(vec2 xy, float seed) {
 #define VERTEX_DATA 0
 #define VERTEX_NORMAL 1
 
-float groundOffset = 1.5f;
+float groundOffset = 1.f;
 
-unsigned int blurIntensity = 2;
+int blurIntensity = 2;
 unsigned int sampleSteps = 4;
 unsigned int sunDistance = 1024;
-float baseIntensity = 0.5f;
+float baseIntensity = 0.35f;
 
 const unsigned int width = 1920;
 const unsigned int height = 1080;
@@ -154,12 +154,7 @@ void renderScene() {
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(waterShader);
 
-	//Scale based on input
-	scaling = scale(mat4(1.0f), vec3(scalar)) * scaling;
-
-	//Create and pass model view matrix
-	mat4 modelView = lookAt(vec3(0.0f, 0.0f, -10.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
-	modelView = rot * scaling * translation;
+	translation = mat4(1.f);
 	mat4 model = rot * scaling * translation;
 	glUniformMatrix4fv(glGetUniformLocation(waterShader, "model"), 1, GL_FALSE, value_ptr(model));
 
@@ -516,7 +511,7 @@ void setupRenderingContext() {
 	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 	glGenTextures(1, &gCaustic);
 	glBindTexture(GL_TEXTURE_2D, gCaustic);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width*2, height*2, 0, GL_RED, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 2048, 2048, 0, GL_RED, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gCaustic, 0);
@@ -528,7 +523,7 @@ void setupRenderingContext() {
 	glBindFramebuffer(GL_FRAMEBUFFER, gBufferBlur);
 	glGenTextures(1, &gCausticBlurred);
 	glBindTexture(GL_TEXTURE_2D, gCausticBlurred);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width*2, height*2, 0, GL_RED, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 2048, 2048, 0, GL_RED, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gCausticBlurred, 0);
@@ -542,8 +537,11 @@ int main(int argc, char** argv)
 {
 	//												//
 	// TEST I believe there are some LINKER ISSUES //
-	//											   //
-
+	//						
+	vec2 incidentVector = glm::normalize(vec2(1.f));
+	vec2 normalVector = vec2(0.f, 1.f);
+	vec2 result = glm::refract(incidentVector, -normalVector, 1.0f);
+	std::cout << result.x << " " << result.y << std::endl;
 
 	if (argc != 2) {
 		cout << "Usage: " << argv[0] << " filename\n";
@@ -697,7 +695,7 @@ int main(int argc, char** argv)
 
 
 	for (int i = 0; i < causticMesh->vertices.size(); i += 4) {
-		causticMesh->vertices[i + 1] = -groundOffset;
+		//causticMesh->vertices[i + 1] = -groundOffset;
 
 
 		float x = causticMesh->vertices[i];
@@ -834,6 +832,7 @@ int main(int argc, char** argv)
 
 			scaling = scale(mat4(1.0f), vec3(0.5));
 			rot = rotate(mat4(1.f), glm::radians(90.f), glm::vec3(1, 0, 0));
+			translation = mat4(1.f);
 		//	translation = translate(mat4(1.f), glm::vec3(0, -groundOffset, 0));
 			mat4 model = rot * scaling * translation;
 			glUniformMatrix4fv(glGetUniformLocation(waterMapShader, "model"), 1, GL_FALSE, value_ptr(model));
@@ -852,7 +851,7 @@ int main(int argc, char** argv)
 
 		//waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
 		
-		glViewport(0, 0, width * 2, height * 2);
+		glViewport(0, 0, 2048, 2048);
 		// first framebuffer: caustic map
 		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -934,6 +933,7 @@ int main(int argc, char** argv)
 		glUniform1i(glGetUniformLocation(groundShader, "texture2"), 1);
 		glUniform1i(glGetUniformLocation(groundShader, "gCausticBlurred"), 2);
 		glUniform1i(glGetUniformLocation(groundShader, "gp"), 3);
+		glUniform1f(glGetUniformLocation(causticMapShader, "groundOffset"), groundOffset);
 
 		//glUniform1i(glGetUniformLocation(groundShader, "gp"), 0);
 		//glUniform1i(glGetUniformLocation(groundShader, "gpp"), 1);
@@ -951,7 +951,7 @@ int main(int argc, char** argv)
 		//Scale based on input
 		scaling = mat4(1.f);
 		rot = mat4(1.f);
-		translation = mat4(1.f);
+		translation = translate(mat4(1.f), glm::vec3(0, -groundOffset, 0));
 
 		//Create and pass model view matrix
 		mat4 modelView = lookAt(vec3(0.0f, 0.0f, -10.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
@@ -995,6 +995,72 @@ int main(int argc, char** argv)
 		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
 		float time = glfwGetTime();
 		
+		
+		for (int i = 0; i < waterMesh->vertices.size(); i += 4) {
+			float x = waterMesh->vertices[i];
+			float z = waterMesh->vertices[i + 2];
+			float dist = glm::length(glm::vec3(x, 0, z));
+			//waterMesh->vertices[i + 1] = 0;
+			GLfloat temp = 0.f;
+			float time2 = time * 2;
+			float timemil = time + 30000;
+			// plane.obj
+			//temp = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time2)+1)/2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
+			//temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
+			//temp += amplitude * sin(-PI * x * frequency / 16 + time2);
+			//temp += amplitude / 10 * sin(-PI * dist * frequency * 5 + time2);
+			//waterMesh->vertices[i + 1] = temp;
+
+			// plane2.obj
+			// BASE
+			//temp = amplitude / 10.f * ( 
+			//	0.2 * ( 
+			//		-3.2 * sin(-1.3*(1-dist)*timemil * 4) 
+			//		- 1.2 * sin(-1.7*E*z * timemil) 
+			//		+ 1.9*sin(1.6*PI*x * timemil) 
+			//		) 
+			//	);
+			//temp += amplitude * sin(-PI * x * frequency / 16 + time2);
+			//temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
+			//temp += amplitude / 50.f * sin(-PI * dist * frequency * 5 + time2);
+			//temp += amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time2) + 1) / 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
+			//waterMesh->vertices[i + 1] = temp;
+
+			// PATTERN 1
+			//blurIntensity = 1;
+			//sampleSteps = 5;
+			//sunDistance = 32;
+			//baseIntensity = 0.25f;
+			//temp += amplitude * sin(-PI * x * frequency / 16 + time2);
+			//temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
+			////temp += amplitude / 50.f * sin(-PI * dist * frequency * 5 + time2);
+			//temp += amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
+			//waterMesh->vertices[i + 1] = temp;
+
+			// PATTERN 2
+			//blurIntensity = 2;
+			sampleSteps = 4;
+			sunDistance = 128;
+			//baseIntensity = 0.2f;
+			temp = amplitude / 10.f * ( 
+				0.2 * ( 
+					-3.2 * sin(-1.3*PHI*(1-dist/2)*timemil * 4) 
+					- 1.2 * sin(-1.7*E*z * time) 
+					+ 1.9*sin(1.7*PI*x * timemil) 
+					) 
+				);
+			temp += amplitude / 50.f * sin(-PI * dist * frequency * 5 + time2);
+			waterMesh->vertices[i + 1] = temp;
+
+			// PATTERN 3
+			//temp = amplitude / 10.f * ( 
+			//	0.2 * ( 
+			//		-3.2 * sin(-1.3*(1-dist)*timemil * 4) 
+			//		- 1.2 * sin(-1.7*E*z * timemil) 
+			//		+ 1.9*sin(1.6*PI*x * timemil) 
+			//		) 
+			//	);
+			//waterMesh->vertices[i + 1] = temp;
 		int vertSize = 0;
 		if (plane160) {
 			wavePresetsUpdate(waterMesh, time);
@@ -1083,7 +1149,9 @@ int main(int argc, char** argv)
 		}
 		ImGui::SliderFloat("Wave Amplitude", &amplitude, 0.01f, 0.4f);
 		ImGui::SliderFloat("Frequency", &frequency, 0.f, 8.f);
-		ImGui::SliderFloat("Ground Offset", &groundOffset, 0.f, 8.f);
+		ImGui::SliderFloat("Ground Offset", &groundOffset, 0.4f, 5.f);
+		ImGui::SliderFloat("Base Intensity", &baseIntensity, 0.f, 1.f);
+		ImGui::SliderInt("Blur Intensity", &blurIntensity, 0, 5);
 		ImGui::End();
 
 		ImGui::Render();
