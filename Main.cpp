@@ -610,7 +610,7 @@ int main(int argc, char** argv)
 
 	//Texture environmentMap("textures/EnvironmentMap.jpg", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
 	//environmentMap.texUnit(fineMeshShader, "tex0", 0);
-	
+
 	unsigned int texture1;
 	glGenTextures(1, &texture1);
 	glBindTexture(GL_TEXTURE_2D, texture1);
@@ -647,7 +647,7 @@ int main(int argc, char** argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	
+
 
 	data = stbi_load("./textures/vlziefgfw_2K_Albedo.jpg", &widthI, &heightI, &nrChannels, 0);
 	if (data)
@@ -662,10 +662,10 @@ int main(int argc, char** argv)
 	stbi_image_free(data);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	
 
 
-	
+
+
 
 	//// Enables the Depth Buffer
 	glEnable(GL_DEPTH_TEST);
@@ -700,8 +700,8 @@ int main(int argc, char** argv)
 
 		float x = causticMesh->vertices[i];
 		float z = causticMesh->vertices[i + 2];
-		causticMesh->tex.push_back((x + 2.0f) /4.0f);
-		causticMesh->tex.push_back((z +2.0f) / 4.0f);
+		causticMesh->tex.push_back((x + 2.0f) / 4.0f);
+		causticMesh->tex.push_back((z + 2.0f) / 4.0f);
 
 		waterMesh->tex.push_back((z + 2.0f) / 4.0f);
 		waterMesh->tex.push_back((z + 2.0f) / 4.0f);
@@ -728,7 +728,7 @@ int main(int argc, char** argv)
 
 
 
-	std::cout << "MAXSIZE: "<<GL_MAX_TEXTURE_SIZE << "\n";
+	std::cout << "MAXSIZE: " << GL_MAX_TEXTURE_SIZE << "\n";
 
 	unsigned int gBufferWater;
 	glGenFramebuffers(1, &gBufferWater);
@@ -770,7 +770,7 @@ int main(int argc, char** argv)
 	double timeDiff;
 	unsigned int counter = 0;
 
-	
+
 
 
 	// Main while loop
@@ -818,99 +818,99 @@ int main(int argc, char** argv)
 
 		causticMesh->bufferData(waterMesh->normals);
 		causticMesh80->bufferData(waterMesh80->normals);
-	
+
 
 		// disable blending for framebuffer stuff
 		glDisable(GL_BLEND);
 
 		// FrameBuffer geomtry of water mesh:
-		
+
 		glBindFramebuffer(GL_FRAMEBUFFER, gBufferWater);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glUseProgram(waterMapShader);
-			glBindVertexArray(myVAO);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUseProgram(waterMapShader);
+		glBindVertexArray(myVAO);
 
-			scaling = scale(mat4(1.0f), vec3(0.5));
-			rot = rotate(mat4(1.f), glm::radians(90.f), glm::vec3(1, 0, 0));
-			translation = mat4(1.f);
+		scaling = scale(mat4(1.0f), vec3(0.5));
+		rot = rotate(mat4(1.f), glm::radians(90.f), glm::vec3(1, 0, 0));
+		translation = mat4(1.f);
 		//	translation = translate(mat4(1.f), glm::vec3(0, -groundOffset, 0));
-			mat4 model = rot * scaling * translation;
-			glUniformMatrix4fv(glGetUniformLocation(waterMapShader, "model"), 1, GL_FALSE, value_ptr(model));
+		mat4 model = rot * scaling * translation;
+		glUniformMatrix4fv(glGetUniformLocation(waterMapShader, "model"), 1, GL_FALSE, value_ptr(model));
 
-			if (plane160) {
-				waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
-			}
-			else if (plane80) {
-				waterMesh80->draw(VERTEX_DATA, VERTEX_NORMAL);
-			}
-			//causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
-			
-			glBindVertexArray(0);
+		if (plane160) {
+			waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+		}
+		else if (plane80) {
+			waterMesh80->draw(VERTEX_DATA, VERTEX_NORMAL);
+		}
+		//causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+
+		glBindVertexArray(0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		
+
 
 		//waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
-		
+
 		glViewport(0, 0, 2048, 2048);
 		// first framebuffer: caustic map
 		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glUseProgram(causticMapShader);
-			glBindVertexArray(myVAO);
-		
-			glUniform1i(glGetUniformLocation(causticMapShader, "texture1"), 0);
-			glUniform1i(glGetUniformLocation(causticMapShader, "gNormal"), 1);
-		
-			glUniform1f(glGetUniformLocation(causticMapShader, "groundOffset"), groundOffset);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUseProgram(causticMapShader);
+		glBindVertexArray(myVAO);
 
-			glUniform1i(glGetUniformLocation(causticMapShader, "sampleSteps"), sampleSteps);
-			glUniform1i(glGetUniformLocation(causticMapShader, "sunDistance"), sunDistance);
-			glUniform1f(glGetUniformLocation(causticMapShader, "baseIntensity"), baseIntensity);
+		glUniform1i(glGetUniformLocation(causticMapShader, "texture1"), 0);
+		glUniform1i(glGetUniformLocation(causticMapShader, "gNormal"), 1);
 
-			model = rot * scaling * translation;
-			glUniformMatrix4fv(glGetUniformLocation(causticMapShader, "model"), 1, GL_FALSE, value_ptr(model));
-		
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, texture1);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, gNormal);
-			
-			//glActiveTexture(GL_TEXTURE1);
-			//glBindTexture(GL_TEXTURE_1D, texture);
+		glUniform1f(glGetUniformLocation(causticMapShader, "groundOffset"), groundOffset);
 
-			if (plane160) {
-				causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
-			}
-			else if (plane80) {
-				causticMesh80->draw(VERTEX_DATA, VERTEX_NORMAL);
-			}
-		
-			glBindVertexArray(0);
+		glUniform1i(glGetUniformLocation(causticMapShader, "sampleSteps"), sampleSteps);
+		glUniform1i(glGetUniformLocation(causticMapShader, "sunDistance"), sunDistance);
+		glUniform1f(glGetUniformLocation(causticMapShader, "baseIntensity"), baseIntensity);
+
+		model = rot * scaling * translation;
+		glUniformMatrix4fv(glGetUniformLocation(causticMapShader, "model"), 1, GL_FALSE, value_ptr(model));
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, gNormal);
+
+		//glActiveTexture(GL_TEXTURE1);
+		//glBindTexture(GL_TEXTURE_1D, texture);
+
+		if (plane160) {
+			causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+		}
+		else if (plane80) {
+			causticMesh80->draw(VERTEX_DATA, VERTEX_NORMAL);
+		}
+
+		glBindVertexArray(0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		
+
 		// second framebuffer: caustic map blurred
 		glBindFramebuffer(GL_FRAMEBUFFER, gBufferBlur);
-			glClear(GL_COLOR_BUFFER_BIT);
-			glUseProgram(causticMapBlurShader);
-			glBindVertexArray(myVAO);
-		
-			glUniform1i(glGetUniformLocation(causticMapBlurShader, "gCaustic"), 0);
-			glUniform1i(glGetUniformLocation(causticMapBlurShader, "blurIntensity"), blurIntensity);
-			model = rot * scaling * translation;
-			glUniformMatrix4fv(glGetUniformLocation(causticMapBlurShader, "model"), 1, GL_FALSE, value_ptr(model));
-		
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, gCaustic);
-			
-			if (plane160) {
-				causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
-			}
-			else if(plane80) {
-				causticMesh80->draw(VERTEX_DATA, VERTEX_NORMAL);
-			}
-		
-			glBindVertexArray(0);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glUseProgram(causticMapBlurShader);
+		glBindVertexArray(myVAO);
+
+		glUniform1i(glGetUniformLocation(causticMapBlurShader, "gCaustic"), 0);
+		glUniform1i(glGetUniformLocation(causticMapBlurShader, "blurIntensity"), blurIntensity);
+		model = rot * scaling * translation;
+		glUniformMatrix4fv(glGetUniformLocation(causticMapBlurShader, "model"), 1, GL_FALSE, value_ptr(model));
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, gCaustic);
+
+		if (plane160) {
+			causticMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
+		}
+		else if (plane80) {
+			causticMesh80->draw(VERTEX_DATA, VERTEX_NORMAL);
+		}
+
+		glBindVertexArray(0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, width, height);
 
@@ -923,7 +923,7 @@ int main(int argc, char** argv)
 		glEnable(GL_BLEND);
 		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 
-		
+
 		//glClear(GL_COLOR_BUFFER_BIT);
 		glUseProgram(groundShader);
 		glBindVertexArray(myVAO);
@@ -963,7 +963,7 @@ int main(int argc, char** argv)
 		mat4 proj = perspective(45.0f, (float)width / (float)height, 0.1f, 100.0f);
 		glUniformMatrix4fv(glGetUniformLocation(groundShader, "proj_matrix"), 1, GL_FALSE, value_ptr(proj));
 
-		
+
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1);
 		glActiveTexture(GL_TEXTURE1);
@@ -982,9 +982,9 @@ int main(int argc, char** argv)
 		}
 
 		glBindVertexArray(0);
-		
 
-		
+
+
 
 		// DRAW WAVE LAST, FOR BLENDING/TRANSPARENCY
 
@@ -994,192 +994,129 @@ int main(int argc, char** argv)
 		glUseProgram(waterShader);
 		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
 		float time = glfwGetTime();
-		
-		
-		for (int i = 0; i < waterMesh->vertices.size(); i += 4) {
-			float x = waterMesh->vertices[i];
-			float z = waterMesh->vertices[i + 2];
-			float dist = glm::length(glm::vec3(x, 0, z));
-			//waterMesh->vertices[i + 1] = 0;
-			GLfloat temp = 0.f;
-			float time2 = time * 2;
-			float timemil = time + 30000;
-			// plane.obj
-			//temp = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time2)+1)/2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
-			//temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
-			//temp += amplitude * sin(-PI * x * frequency / 16 + time2);
-			//temp += amplitude / 10 * sin(-PI * dist * frequency * 5 + time2);
-			//waterMesh->vertices[i + 1] = temp;
 
-			// plane2.obj
-			// BASE
-			//temp = amplitude / 10.f * ( 
-			//	0.2 * ( 
-			//		-3.2 * sin(-1.3*(1-dist)*timemil * 4) 
-			//		- 1.2 * sin(-1.7*E*z * timemil) 
-			//		+ 1.9*sin(1.6*PI*x * timemil) 
-			//		) 
-			//	);
-			//temp += amplitude * sin(-PI * x * frequency / 16 + time2);
-			//temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
-			//temp += amplitude / 50.f * sin(-PI * dist * frequency * 5 + time2);
-			//temp += amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time2) + 1) / 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
-			//waterMesh->vertices[i + 1] = temp;
-
-			// PATTERN 1
-			//blurIntensity = 1;
-			//sampleSteps = 5;
-			//sunDistance = 32;
-			//baseIntensity = 0.25f;
-			//temp += amplitude * sin(-PI * x * frequency / 16 + time2);
-			//temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
-			////temp += amplitude / 50.f * sin(-PI * dist * frequency * 5 + time2);
-			//temp += amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
-			//waterMesh->vertices[i + 1] = temp;
-
-			// PATTERN 2
-			//blurIntensity = 2;
-			sampleSteps = 4;
-			sunDistance = 128;
-			//baseIntensity = 0.2f;
-			temp = amplitude / 10.f * ( 
-				0.2 * ( 
-					-3.2 * sin(-1.3*PHI*(1-dist/2)*timemil * 4) 
-					- 1.2 * sin(-1.7*E*z * time) 
-					+ 1.9*sin(1.7*PI*x * timemil) 
-					) 
-				);
-			temp += amplitude / 50.f * sin(-PI * dist * frequency * 5 + time2);
-			waterMesh->vertices[i + 1] = temp;
-
-			// PATTERN 3
-			//temp = amplitude / 10.f * ( 
-			//	0.2 * ( 
-			//		-3.2 * sin(-1.3*(1-dist)*timemil * 4) 
-			//		- 1.2 * sin(-1.7*E*z * timemil) 
-			//		+ 1.9*sin(1.6*PI*x * timemil) 
-			//		) 
-			//	);
-			//waterMesh->vertices[i + 1] = temp;
-		int vertSize = 0;
-		if (plane160) {
-			wavePresetsUpdate(waterMesh, time);
-		}
-		else if (plane80) {
-			wavePresetsUpdate(waterMesh80, time);
-		}
-		
 
 		
+			int vertSize = 0;
+			if (plane160) {
+				wavePresetsUpdate(waterMesh, time);
+			}
+			else if (plane80) {
+				wavePresetsUpdate(waterMesh80, time);
+			}
 
-		// Handles camera inputs
 
-		if (!io.WantCaptureMouse) {
-			camera.Inputs(window);
+
+
+			// Handles camera inputs
+
+			if (!io.WantCaptureMouse) {
+				camera.Inputs(window);
+			}
+			// Updates and exports the camera matrix to the Vertex Shader
+			camera.Matrix(45.0f, 0.1f, 100.0f, waterShader, "camMatrix");
+			glUniform3fv(glGetUniformLocation(waterShader, "viewPos"), 1, &camera.Position[0]);
+			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glBindVertexArray(myVAO);
+			renderScene();
+			glBindVertexArray(0);
+			//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+			ImGui::Begin("SandBox!");
+
+			if (ImGui::Button("80 x 80 Plane")) {
+
+				plane80 = true;
+				plane160 = false;
+
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("160 x 160 Plane")) {
+				plane80 = false;
+				plane160 = true;
+			}
+			if (ImGui::Button("Wave Preset 0")) {
+
+				wavePre0 = true;
+
+				wavePre1 = false;
+				wavePre2 = false;
+				wavePre3 = false;
+				wavePre4 = false;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Wave Preset 1")) {
+
+				wavePre1 = true;
+
+				wavePre0 = false;
+				wavePre2 = false;
+				wavePre3 = false;
+				wavePre4 = false;
+			}
+			if (ImGui::Button("Wave Preset 2")) {
+
+				wavePre2 = true;
+
+				wavePre0 = false;
+				wavePre1 = false;
+				wavePre3 = false;
+				wavePre4 = false;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Wave Preset 3")) {
+
+				wavePre3 = true;
+
+				wavePre0 = false;
+				wavePre1 = false;
+				wavePre2 = false;
+				wavePre4 = false;
+			}
+
+			if (ImGui::Button("Wave Preset 4")) {
+
+				wavePre4 = true;
+
+				wavePre0 = false;
+				wavePre1 = false;
+				wavePre2 = false;
+				wavePre3 = false;
+			}
+			ImGui::SliderFloat("Wave Amplitude", &amplitude, 0.01f, 0.4f);
+			ImGui::SliderFloat("Frequency", &frequency, 0.f, 8.f);
+			ImGui::SliderFloat("Ground Offset", &groundOffset, 0.4f, 5.f);
+			ImGui::SliderFloat("Base Intensity", &baseIntensity, 0.f, 1.f);
+			ImGui::SliderInt("Blur Intensity", &blurIntensity, 0, 5);
+			ImGui::End();
+
+			ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+			glfwSwapBuffers(window);
+			// Take care of all GLFW events
+			glfwPollEvents();
+
+			//std::cout << "Normals: " << file->normals.size()<< "\n";
+			//std::cout << "Vertices: " << file->vertices.size() << "\n";
+
+			//std::cout << "Normals1: " << fineFile->normals.size() << "\n";
+			//std::cout << "Vertices1: " << fineFile->vertices.size() << "\n";
 		}
-		// Updates and exports the camera matrix to the Vertex Shader
-		camera.Matrix(45.0f, 0.1f, 100.0f, waterShader, "camMatrix");
-		glUniform3fv(glGetUniformLocation(waterShader, "viewPos"), 1, &camera.Position[0]);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glBindVertexArray(myVAO);
-		renderScene();
-		glBindVertexArray(0);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-		ImGui::Begin("SandBox!");
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
 
-		if (ImGui::Button("80 x 80 Plane")) {
-
-			plane80 = true;
-			plane160 = false;
-
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("160 x 160 Plane")) {
-			plane80 = false;
-			plane160 = true;
-		}
-		if (ImGui::Button("Wave Preset 0")) {
-
-			wavePre0 = true;
-
-			wavePre1 = false;
-			wavePre2 = false;
-			wavePre3 = false;
-			wavePre4 = false;
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Wave Preset 1")) {
-
-			wavePre1 = true;
-			
-			wavePre0 = false;
-			wavePre2 = false;
-			wavePre3 = false;
-			wavePre4 = false;
-		}
-		if (ImGui::Button("Wave Preset 2")) {
-
-			wavePre2 = true;
-
-			wavePre0 = false;
-			wavePre1 = false;
-			wavePre3 = false;
-			wavePre4 = false;
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Wave Preset 3")) {
-
-			wavePre3 = true;
-
-			wavePre0 = false;
-			wavePre1 = false;
-			wavePre2 = false;
-			wavePre4 = false;
-		}
-
-		if (ImGui::Button("Wave Preset 4")) {
-
-			wavePre4 = true;
-
-			wavePre0 = false;
-			wavePre1 = false;
-			wavePre2 = false;
-			wavePre3 = false;
-		}
-		ImGui::SliderFloat("Wave Amplitude", &amplitude, 0.01f, 0.4f);
-		ImGui::SliderFloat("Frequency", &frequency, 0.f, 8.f);
-		ImGui::SliderFloat("Ground Offset", &groundOffset, 0.4f, 5.f);
-		ImGui::SliderFloat("Base Intensity", &baseIntensity, 0.f, 1.f);
-		ImGui::SliderInt("Blur Intensity", &blurIntensity, 0, 5);
-		ImGui::End();
-
-		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-		glfwSwapBuffers(window);
-		// Take care of all GLFW events
-		glfwPollEvents();
-
-		//std::cout << "Normals: " << file->normals.size()<< "\n";
-		//std::cout << "Vertices: " << file->vertices.size() << "\n";
-
-		//std::cout << "Normals1: " << fineFile->normals.size() << "\n";
-		//std::cout << "Vertices1: " << fineFile->vertices.size() << "\n";
-	}
-
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
-
-	// Delete all the objects we've created
-	//brickTex.Delete();
-	//shaderProgram.Delete();
-	// Delete window before ending the program
-	glfwDestroyWindow(window);
-	// Terminate GLFW before ending the program
-	glfwTerminate();
-	return 0;
+		// Delete all the objects we've created
+		//brickTex.Delete();
+		//shaderProgram.Delete();
+		// Delete window before ending the program
+		glfwDestroyWindow(window);
+		// Terminate GLFW before ending the program
+		glfwTerminate();
+		return 0;
+	
 }
 
 void wavePresetsUpdate(ObjFile *waterMesh, float time) {
@@ -1238,7 +1175,7 @@ void wavePresetsUpdate(ObjFile *waterMesh, float time) {
 
 		// PATTERN 2
 		else if (wavePre3) {
-			blurIntensity = 1;
+			blurIntensity = 2;
 			sampleSteps = 4;
 			sunDistance = 128;
 			baseIntensity = 0.2f;
