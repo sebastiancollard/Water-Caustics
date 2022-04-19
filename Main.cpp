@@ -64,7 +64,7 @@ ObjFile* causticMesh;
 ObjFile* waterMesh80;
 ObjFile* causticMesh80;
 
-void wavePresetsUpdate(ObjFile* waterMesh, float time);
+void wavePresetsUpdate(ObjFile* waterMesh, double time);
 
 // Transformation matrices
 mat4 rot = mat4(1.0f);
@@ -812,6 +812,17 @@ int main(int argc, char** argv)
 			counter = 0;
 		}
 
+
+
+
+		if (plane160) {
+			wavePresetsUpdate(waterMesh, crntTime);
+		}
+		else if (plane80) {
+			wavePresetsUpdate(waterMesh80, crntTime);
+		}
+
+
 		causticMesh->bufferData(waterMesh->normals);
 		causticMesh80->bufferData(waterMesh80->normals);
 
@@ -990,17 +1001,7 @@ int main(int argc, char** argv)
 		//std::cout << glfwGetTime() << "\n";
 		glUseProgram(waterShader);
 		//glUniform1f(glGetUniformLocation(shaderProgram.ID, "time"), glfwGetTime());
-		float time = glfwGetTime();
-
-
 		
-			int vertSize = 0;
-			if (plane160) {
-				wavePresetsUpdate(waterMesh, time);
-			}
-			else if (plane80) {
-				wavePresetsUpdate(waterMesh80, time);
-			}
 
 
 
@@ -1117,7 +1118,7 @@ int main(int argc, char** argv)
 	
 }
 
-void wavePresetsUpdate(ObjFile *waterMesh, float time) {
+void wavePresetsUpdate(ObjFile *waterMesh, double time) {
 	int vertSize = waterMesh->vertices.size();
 	for (int i = 0; i < vertSize; i += 4) {
 		float x = waterMesh->vertices[i];
@@ -1125,8 +1126,8 @@ void wavePresetsUpdate(ObjFile *waterMesh, float time) {
 		float dist = glm::length(glm::vec3(x, 0, z));
 		//waterMesh->vertices[i + 1] = 0;
 		GLfloat temp = 0.f;
-		float time2 = time * 2;
-		float timemil = time + 30000;
+		double time2 = time * 2;
+		double timePlus30k = time + 30000;
 		// plane.obj
 		if (wavePre0) {
 			temp = amplitude / 1.5 * sin(-PI * dist * frequency + time * 2) * ((sin(-PI * x * frequency * i + time2) + 1) / 2) * sin(-PI * x * frequency + time * 3) * sin(-PI * z * frequency / 2 + time * 4);
@@ -1141,9 +1142,9 @@ void wavePresetsUpdate(ObjFile *waterMesh, float time) {
 		else if (wavePre1) {
 			temp = amplitude / 10.f * (
 				0.2 * (
-					-3.2 * sin(-1.3 * (1 - dist) * timemil * 4)
-					- 1.2 * sin(-1.7 * E * z * timemil)
-					+ 1.9 * sin(1.6 * PI * x * timemil)
+					-3.2 * sin(-1.3 * (1 - dist) * timePlus30k * 4)
+					- 1.2 * sin(-1.7 * E * z * timePlus30k)
+					+ 1.9 * sin(1.6 * PI * x * timePlus30k)
 					)
 				);
 			temp += amplitude * sin(-PI * x * frequency / 16 + time2);
@@ -1179,9 +1180,9 @@ void wavePresetsUpdate(ObjFile *waterMesh, float time) {
 			//baseIntensity = 0.2f;
 			temp = amplitude / 10.f * (
 				0.2 * (
-					-3.2 * sin(-1.3 * PHI * (1 - dist / 2) * timemil * 4)
+					-3.2 * sin(-1.3 * PHI * (1 - dist / 2) * timePlus30k * 4)
 					- 1.2 * sin(-1.7 * E * z * time)
-					+ 1.9 * sin(1.7 * PI * x * timemil)
+					+ 1.9 * sin(1.7 * PI * x * timePlus30k)
 					)
 				);
 			temp += amplitude / 50.f * sin(-PI * dist * frequency * 5 + time2);
@@ -1194,9 +1195,9 @@ void wavePresetsUpdate(ObjFile *waterMesh, float time) {
 		else if (wavePre4) {
 			temp = amplitude / 10.f * (
 				0.2 * (
-					-3.2 * sin(-1.3 * (1 - dist) * timemil * 4)
-					- 1.2 * sin(-1.7 * E * z * timemil)
-					+ 1.9 * sin(1.6 * PI * x * timemil)
+					-3.2 * sin(-1.3 * (1 - dist) * timePlus30k * 4)
+					- 1.2 * sin(-1.7 * E * z * timePlus30k)
+					+ 1.9 * sin(1.6 * PI * x * timePlus30k)
 					)
 				);
 			waterMesh->vertices[i + 1] = temp;
