@@ -18,6 +18,7 @@ uniform float groundOffset;
 
 void main()
 {
+    float depth = groundOffset+0.2f;
     vec2 tex = abs(TexCoords);
     tex.y = 1.f - tex.y;
 
@@ -51,7 +52,7 @@ void main()
             // the starting wave plane is 1.5 units above the ground,
             // this only approximates the vector as it does not account
             // for the added height variation of the wave equation.
-            vec3 dir3D = normalize(vec3(dir2D.x, 1.f/groundOffset, dir2D.y));
+            vec3 dir3D = normalize(vec3(dir2D.x, 1.f/depth, dir2D.y));
 
             // get sample normal from texture
             vec3 normTex = normalize(texture(gNormal, vec2(x, y)).rgb);
@@ -59,19 +60,19 @@ void main()
             // get refracted direction
             //refrac = normalize(refract(dir3D, -normTex, 1.333));
             float temp = dot(dir3D, normTex);
-            refrac = normalize(vec3(normTex.x, (1-(temp > 0.99f ? pow(temp, 64) : pow(temp, 64))) * normTex.y, normTex.z));
+            refrac = normalize(vec3(normTex.x, (1-pow(temp, 64)) * normTex.y, normTex.z));
             //refrac = normalize(normTex+vec3(dir2D.x, 0, dir2D.y));
 
             // calculate text coord mapping based on the angle between the refracted angle and the 
             // up vector (sun is directly above at all locations).
-            float map = max(pow(dot(refrac, vec3(0, 1, 0)), max(sunDistance-pow(groundOffset, 3), 64)) - 0.5, 0.f);
+            float map = max(pow(dot(refrac, vec3(0, 1, 0)), max(sunDistance/depth, sunDistance)) - 0.5, 0.f);
 
             // calaulate distance weighting
             distanceIntensity = pow(1.f - distance(tex, vec2(x, y)), 4);
 	        
             // add the mapping on the sun texture multiplied by intensity variables
             // accumulate this for each sample.
-            FragColor += texture(texture1, vec2(map)).r * max(1.f/groundOffset, 1.f) * baseIntensity * distanceIntensity;
+            FragColor += texture(texture1, vec2(map)).r * max(1.f/depth, 1.f) * baseIntensity * distanceIntensity;
         }
     }
 
