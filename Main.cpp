@@ -100,7 +100,7 @@ float gold_noise(vec2 xy, float seed) {
 
 float groundOffset = 1.f;
 
-int blurIntensity = 1;
+int blurIntensity = 0;
 int sampleSteps = 3;
 unsigned int sunDistance = 1024;
 float baseIntensity = 0.6f;
@@ -108,6 +108,7 @@ float baseIntensity = 0.6f;
 const unsigned int width = 1920;
 const unsigned int height = 1080;
 unsigned int gBuffer, gBufferBlur, gCaustic, gCausticBlurred;
+unsigned int textureResolution = 1024;
 
 
 ////////////////////////////////////////////////////////////////
@@ -511,9 +512,9 @@ void setupRenderingContext() {
 	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 	glGenTextures(1, &gCaustic);
 	glBindTexture(GL_TEXTURE_2D, gCaustic);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 4096, 4096, 0, GL_RED, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, textureResolution, textureResolution, 0, GL_RED, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gCaustic, 0);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "Framebuffer not complete!" << std::endl;
@@ -523,9 +524,9 @@ void setupRenderingContext() {
 	glBindFramebuffer(GL_FRAMEBUFFER, gBufferBlur);
 	glGenTextures(1, &gCausticBlurred);
 	glBindTexture(GL_TEXTURE_2D, gCausticBlurred);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 4096, 4096, 0, GL_RED, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, textureResolution, textureResolution, 0, GL_RED, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gCausticBlurred, 0);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "caustic Blur Framebuffer not complete!" << std::endl;
@@ -733,9 +734,10 @@ int main(int argc, char** argv)
 
 	glGenTextures(1, &gNormal);
 	glBindTexture(GL_TEXTURE_2D, gNormal);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 4096, 4096, 0, GL_RGBA, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, textureResolution, textureResolution, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gNormal, 0);
@@ -817,7 +819,7 @@ int main(int argc, char** argv)
 
 		// FrameBuffer geomtry of water mesh:
 
-		glViewport(0, 0, 4096, 4096);
+		glViewport(0, 0, textureResolution, textureResolution);
 		glBindFramebuffer(GL_FRAMEBUFFER, gBufferWater);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glUseProgram(waterMapShader);
@@ -844,7 +846,7 @@ int main(int argc, char** argv)
 
 		//waterMesh->draw(VERTEX_DATA, VERTEX_NORMAL);
 
-		// first framebuffer: caustic map
+		// second framebuffer: caustic map
 		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glUseProgram(causticMapShader);
@@ -880,9 +882,8 @@ int main(int argc, char** argv)
 			glBindVertexArray(0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		//glViewport(0, 0, 2048, 2048);
 
-		// second framebuffer: caustic map blurred
+		// third framebuffer: caustic map blurred
 		glBindFramebuffer(GL_FRAMEBUFFER, gBufferBlur);
 			glClear(GL_COLOR_BUFFER_BIT);
 			glUseProgram(causticMapBlurShader);
@@ -905,6 +906,7 @@ int main(int argc, char** argv)
 
 			glBindVertexArray(0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 		glViewport(0, 0, width, height);
 
 
