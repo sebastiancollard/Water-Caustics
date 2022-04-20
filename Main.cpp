@@ -536,14 +536,12 @@ void setupRenderingContext() {
 
 int main(int argc, char** argv)
 {
-	//												//
-	// TEST I believe there are some LINKER ISSUES //
-	//						
+				
 
-	if (argc != 2) {
-		cout << "Usage: " << argv[0] << " filename\n";
-		exit(EXIT_FAILURE);
-	}
+//	if (argc != 2) {
+//		cout << "Usage: " << argv[0] << " filename\n";
+//		exit(EXIT_FAILURE);
+//	}
 
 	// Initalization of Planes
 	char plane[] = "./models/plane.obj";
