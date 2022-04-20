@@ -18,7 +18,7 @@ uniform float groundOffset;
 
 void main()
 {
-    float depth = groundOffset+0.2f;
+    float depth = groundOffset+0.6f;
     vec2 tex = abs(TexCoords);
     tex.y = 1.f - tex.y;
 
@@ -76,7 +76,7 @@ void main()
         }
     }
 
-    FragColor = min(pow(FragColor,groundOffset+1) , 1.f);
+    FragColor = min(pow(FragColor,depth+1) , 1.f);
 
     // for debugging caustic 
     //FragColor = tex.x < 0.5f && tex.y < 0.5f ? texture(gNormal, tex).r : 0.f;
