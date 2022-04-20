@@ -665,7 +665,7 @@ int main(int argc, char** argv)
 	//// Enables the Depth Buffer
 	glEnable(GL_DEPTH_TEST);
 	//// Creates camera object
-	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
+	Camera camera(width, height, glm::vec3(0.0f, 0.2f, 4.0f));
 
 	setupRenderingContext();
 	waterMesh->calculateNormals();
