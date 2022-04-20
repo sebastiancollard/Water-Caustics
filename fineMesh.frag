@@ -26,7 +26,7 @@ void main()
 {
 	float caustic = texture(gCausticBlurred, tex).r;
 	vec3 norm = normalize(color);
-	vec3 waterColor = vec3(0., 122.5f/255.f, 1.);
+	vec3 waterColor = vec3(0., 112.5f/255.f, 1.);
 	float intensity = 1.f;
 	////FragColor = vec4((color), 1.0);
 	//vec2 intercepts = vec2(intercept.x,intercept.z);

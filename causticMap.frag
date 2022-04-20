@@ -60,7 +60,7 @@ void main()
             // get refracted direction
             //refrac = normalize(refract(dir3D, -normTex, 1.333));
             float temp = dot(dir3D, normTex);
-            refrac = normalize(vec3(normTex.x, (1-pow(temp, 64)) * normTex.y, normTex.z));
+            refrac = normalize(vec3(normTex.x, (1-pow(temp, 32)) * normTex.y, normTex.z));
             //refrac = normalize(normTex+vec3(dir2D.x, 0, dir2D.y));
 
             // calculate text coord mapping based on the angle between the refracted angle and the 
