@@ -783,7 +783,8 @@ int main(int argc, char** argv)
 	while (!glfwWindowShouldClose(window))
 	{
 
-
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		// Specify the color of the background
 		glClearColor(51.f / 255.f, 71.f / 255.f, 79.f / 255.f, 1.0f);

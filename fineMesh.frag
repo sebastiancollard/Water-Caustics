@@ -46,7 +46,7 @@ void main()
 	float b = 0.1f;
 	float attenuation = 2.f / ( a * groundOffset * groundOffset + b * groundOffset+ 1.f );
 	
-	vec3 res = (texture(texture2,tex).rgb * 0.9f + texture(texture2,tex).rgb * vec3(caustic)) * pow(min(attenuation, 1.f), 2);
+	vec3 res = (texture(texture2,tex).rgb * 0.9f + texture(texture2,tex).rgb * vec3(caustic)) * min(attenuation, 1.f);
 	res = min(res, texture(texture2,tex).rgb * 1.4) + waterColor * 0.25f;
 
 	FragColor = vec4(res ,1.0f);
