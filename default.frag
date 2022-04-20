@@ -20,7 +20,7 @@ vec3 lightColor = vec3(0.9922f, 0.9843f, 0.8275f);
 // water color
 vec3 objectColor = vec3(0., 100.f/255.f, 1.);
 // light placed to the side to see reflections better for now
-vec3 lightPos = vec3 (0, 5, -10);
+vec3 lightPos = vec3 (5, 5, -10);
 
 void main()
 {

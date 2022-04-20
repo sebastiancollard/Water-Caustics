@@ -1163,7 +1163,7 @@ void wavePresetsUpdate(ObjFile *waterMesh, double time) {
 		else if (wavePre3) {
 			//blurIntensity = 2;
 			//sampleSteps = 4;
-			sunDistance = 128;
+			sunDistance = 256;
 			//baseIntensity = 0.2f;
 			//temp += amplitude / 2.f * sin(-PI * x * z * frequency / 8 + time2);
 			temp += amplitude / 10.f * (

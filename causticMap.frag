@@ -65,7 +65,7 @@ void main()
 
             // calculate text coord mapping based on the angle between the refracted angle and the 
             // up vector (sun is directly above at all locations).
-            float map = max(pow(dot(refrac, vec3(0, 1, 0)), max(sunDistance/depth, sunDistance)) - 0.5, 0.f);
+            float map = max(pow(dot(refrac, vec3(0, 1, 0)), max(sunDistance/depth, sunDistance)) / 2.0, 0.f);
 
             // calaulate distance weighting
             distanceIntensity = pow(1.f - distance(tex, vec2(x, y)), 4);
