@@ -102,7 +102,7 @@ float groundOffset = 1.f;
 
 int blurIntensity = 0;
 int sampleSteps = 3;
-unsigned int sunDistance = 1024;
+unsigned int sunDistance = 256;
 float baseIntensity = 0.6f;
 
 const unsigned int width = 1920;
@@ -1005,7 +1005,7 @@ int main(int argc, char** argv)
 			glBindVertexArray(0);
 			//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-			ImGui::Begin("SandBox!");
+			ImGui::Begin("Water Caustics Demo");
 
 			if (ImGui::Button("80 x 80 Plane")) {
 
@@ -1018,21 +1018,25 @@ int main(int argc, char** argv)
 				plane80 = false;
 				plane160 = true;
 			}
-			if (ImGui::Button("Wave Preset 0")) {
-
-				wavePre0 = true;
-
-				wavePre1 = false;
-				wavePre2 = false;
-				wavePre3 = false;
-				wavePre4 = false;
-			}
-			ImGui::SameLine();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
 			if (ImGui::Button("Wave Preset 1")) {
 
-				wavePre1 = true;
+				wavePre0 = true;
+				amplitude = 0.02;
+				frequency = 7.0;
+				groundOffset = 0.4;
+				baseIntensity = 0.4;
+				sampleSteps = 4;
+				sunDistance = 128;
+				blurIntensity = 0;
 
-				wavePre0 = false;
+				wavePre1 = false;
 				wavePre2 = false;
 				wavePre3 = false;
 				wavePre4 = false;
@@ -1040,17 +1044,30 @@ int main(int argc, char** argv)
 			if (ImGui::Button("Wave Preset 2")) {
 
 				wavePre2 = true;
+				amplitude = 0.033;
+				frequency = 8.0;
+				groundOffset = 1.0;
+				baseIntensity = 0.3;
+				sampleSteps = 5;
+				sunDistance = 32;
+				blurIntensity = 0;
 
 				wavePre0 = false;
 				wavePre1 = false;
 				wavePre3 = false;
 				wavePre4 = false;
 			}
-			ImGui::SameLine();
 			if (ImGui::Button("Wave Preset 3")) {
 
 				wavePre3 = true;
+				amplitude = 0.06125;
+				frequency = 4;
+				groundOffset = 1.f;
 
+				blurIntensity = 0;
+				sampleSteps = 3;
+				sunDistance = 256;
+				baseIntensity = 0.6f;
 				wavePre0 = false;
 				wavePre1 = false;
 				wavePre2 = false;
@@ -1060,17 +1077,53 @@ int main(int argc, char** argv)
 			if (ImGui::Button("Wave Preset 4")) {
 
 				wavePre4 = true;
+				amplitude = 0.2;
+				frequency = 2;
+				groundOffset = 1.0f;
+
+				blurIntensity = 0;
+				sampleSteps = 5;
+				sunDistance = 256;
+				baseIntensity = 0.4f;
 
 				wavePre0 = false;
 				wavePre1 = false;
 				wavePre2 = false;
 				wavePre3 = false;
 			}
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
 			ImGui::SliderFloat("Wave Amplitude", &amplitude, 0.01f, 0.4f);
 			ImGui::SliderFloat("Frequency", &frequency, 0.f, 8.f);
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
 			ImGui::SliderFloat("Ground Offset", &groundOffset, 0.4f, 5.f);
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
 			ImGui::SliderFloat("Base Intensity", &baseIntensity, 0.f, 5.f);
 			ImGui::SliderInt("Blur Intensity", &blurIntensity, 0, 5);
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
 			ImGui::SliderInt("Sample Steps", &sampleSteps, 1, 5);
 			ImGui::End();
 
@@ -1146,7 +1199,6 @@ void wavePresetsUpdate(ObjFile *waterMesh, double time) {
 		else if (wavePre2) {
 			//blurIntensity = 1;
 			//sampleSteps = 5;
-			sunDistance = 32;
 			//baseIntensity = 0.25f;
 			temp += amplitude * sin(-PI * x * frequency / 16 + time2);
 			temp += amplitude * sin(-PI * x * z * frequency / 8 + time2);
@@ -1161,7 +1213,7 @@ void wavePresetsUpdate(ObjFile *waterMesh, double time) {
 		else if (wavePre3) {
 			//blurIntensity = 2;
 			//sampleSteps = 4;
-			sunDistance = 256;
+			//sunDistance = 256;
 			//baseIntensity = 0.2f;
 			//temp += amplitude / 2.f * sin(-PI * x * z * frequency / 8 + time2);
 			temp += amplitude / 10.f * (

@@ -18,9 +18,9 @@ uniform vec3 viewPos;
 // might want to change light color to something more accurate to the sun later on
 vec3 lightColor = vec3(0.9922f, 0.9843f, 0.8275f);
 // water color
-vec3 objectColor = vec3(0., 100.f/255.f, 1.);
+vec3 objectColor = vec3(0., 112.5f/255.f, 0.9);
 // light placed to the side to see reflections better for now
-vec3 lightPos = vec3 (5, 5, -10);
+vec3 lightPos = vec3 (2.5, 5, -10);
 
 void main()
 {
@@ -32,9 +32,9 @@ void main()
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(lightPos - FragPos);
     //vec3 lightDir = vec3(0, 1,0);
-    float diff = max(dot(norm, lightDir)*1.5, 0.0);
+    float diff = max(dot(norm, lightDir), 0.0);
     // second component is different since it aims to make the water more green looking at steeper angles 
-    vec3 diffuse = vec3(diff * lightColor.r, clamp(diff * (1 + 2.f * (1 - diff)), 0, 1) * lightColor.g, diff * lightColor.b);
+    vec3 diffuse = normalize(vec3(diff * lightColor.r, clamp(2*diff - diff*diff, 0, 1) * lightColor.g, diff * lightColor.b));
     
     // specular
     float specularStrength = 1.;
