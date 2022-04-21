@@ -1026,39 +1026,6 @@ int main(int argc, char** argv)
 			ImGui::Spacing();
 			ImGui::Spacing();
 			if (ImGui::Button("Wave Preset 1")) {
-
-				wavePre0 = true;
-				amplitude = 0.02;
-				frequency = 7.0;
-				groundOffset = 0.4;
-				baseIntensity = 0.4;
-				sampleSteps = 4;
-				sunDistance = 128;
-				blurIntensity = 0;
-
-				wavePre1 = false;
-				wavePre2 = false;
-				wavePre3 = false;
-				wavePre4 = false;
-			}
-			if (ImGui::Button("Wave Preset 2")) {
-
-				wavePre2 = true;
-				amplitude = 0.033;
-				frequency = 8.0;
-				groundOffset = 1.0;
-				baseIntensity = 0.3;
-				sampleSteps = 5;
-				sunDistance = 32;
-				blurIntensity = 0;
-
-				wavePre0 = false;
-				wavePre1 = false;
-				wavePre3 = false;
-				wavePre4 = false;
-			}
-			if (ImGui::Button("Wave Preset 3")) {
-
 				wavePre3 = true;
 				amplitude = 0.06125;
 				frequency = 4;
@@ -1072,6 +1039,43 @@ int main(int argc, char** argv)
 				wavePre1 = false;
 				wavePre2 = false;
 				wavePre4 = false;
+
+
+				
+			}
+			if (ImGui::Button("Wave Preset 2")) {
+				wavePre0 = true;
+				amplitude = 0.02;
+				frequency = 7.0;
+				groundOffset = 0.4;
+				baseIntensity = 0.5;
+				sampleSteps = 4;
+				sunDistance = 256;
+				blurIntensity = 0;
+
+				wavePre1 = false;
+				wavePre2 = false;
+				wavePre3 = false;
+				wavePre4 = false;
+
+
+				
+			}
+			if (ImGui::Button("Wave Preset 3")) {
+				wavePre2 = true;
+				amplitude = 0.033;
+				frequency = 8.0;
+				groundOffset = 1.0;
+				baseIntensity = 0.3;
+				sampleSteps = 5;
+				sunDistance = 32;
+				blurIntensity = 0;
+
+				wavePre0 = false;
+				wavePre1 = false;
+				wavePre3 = false;
+				wavePre4 = false;
+				
 			}
 
 			if (ImGui::Button("Wave Preset 4")) {

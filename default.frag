@@ -18,7 +18,7 @@ uniform vec3 viewPos;
 // might want to change light color to something more accurate to the sun later on
 vec3 lightColor = vec3(0.9922f, 0.9843f, 0.8275f);
 // water color
-vec3 objectColor = vec3(0., 112.5f/255.f, 0.9);
+vec3 objectColor = vec3(0., 112.5f/255.f, 1.);
 // light placed to the side to see reflections better for now
 vec3 lightPos = vec3 (2.5, 5, -10);
 
