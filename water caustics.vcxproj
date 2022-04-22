@@ -149,7 +149,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="EBO.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
@@ -160,11 +159,7 @@
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="objFile.cpp" />
-    <ClCompile Include="shaderClass.cpp" />
     <ClCompile Include="stb.cpp" />
-    <ClCompile Include="Texture.cpp" />
-    <ClCompile Include="VAO.cpp" />
-    <ClCompile Include="VBO.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="causticMapBlur.frag" />
@@ -180,7 +175,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="EBO.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imgui_impl_glfw.h" />
@@ -191,10 +185,6 @@
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="objFile.h" />
-    <ClInclude Include="shaderClass.h" />
-    <ClInclude Include="Texture.h" />
-    <ClInclude Include="VAO.h" />
-    <ClInclude Include="VBO.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\brick.png" />
